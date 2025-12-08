@@ -251,6 +251,7 @@ void dump_vecs(char *OpName)
 #if defined(__AVX2__) || (defined(USE_SOFT_INTRINSICS) && (USE_SOFT_INTRINSICS >= 2))
         printf("I%4u.", i); d256_u32("8u: ", Vsrc[i].___m256i);
         printf("I%4u.", i); d256_u32("8u: ", Vsrc[i+1].___m256i);
+        printf("I%4u.", i); d256_u32("8u: ", Vsrc[i+2].___m256i);
         printf("O%4u.", i); d256_f64("4d: ", Vout[i].___m256d);
         printf("O%4u.", i); d256_f32("8s: ", Vout[i].___m256);
         printf("O%4u.", i); d256_u32("8u: ", Vout[i].___m256i);
@@ -272,6 +273,12 @@ __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ #
 #define DEFINE_TEST_OP_RA(op, type_ret, type_a) \
 __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a ); }
 
+#if (_MSC_VER >= 1950) && defined(__AVX2__)
+#define AVX2_WORKAROUND (0)
+#else
+#define AVX2_WORKAROUND (1)
+#endif
+
 // Visual Studio 2022 17.14 generates incorrect -O2 optimization for _mm256_sll_epi* _mm256_srl_epi* _mm256_sra_epi* intrinsics
 // (due to the mix of m256 and m128 data types it seems?) causing unnecessary and incorrect vector register spills to the stack.
 // This workaround using volatile temporarily works around the bugs.  The bug does not occur with -Od or -O1 but lowering the
@@ -279,7 +286,7 @@ __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ #
 
 #define DEFINE_TEST_OP_RAB(op, type_ret, type_a, type_b) \
 __forceinline void __cdecl test ## op         (unsigned index) { \
-   if ((sizeof(type_a) == 32) && (sizeof(type_b) == 16)) \
+    if (AVX2_WORKAROUND && (sizeof(type_a) == 32) && (sizeof(type_b) == 16)) \
        { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a, *(volatile type_b *)&Vsrc[index + 1]._ ## type_b ); } \
     else \
        { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a, Vsrc[index + 1]._ ## type_b ); } \
