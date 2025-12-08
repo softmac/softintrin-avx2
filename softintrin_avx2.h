@@ -556,10 +556,12 @@ __forceinline rettype _mm_ ## name (arg1type arg1, arg2type arg2, arg3type arg3)
 #undef _mm_abs_epi8
 #undef _mm_abs_epi16
 #undef _mm_abs_epi32
+#undef _mm_abs_epi64
 
 DEFINE_N128_OP_N128(     __m128i, abs_epi8,     vabsq_s8,       __m128i, a,             0)
 DEFINE_N128_OP_N128(     __m128i, abs_epi16,    vabsq_s16,      __m128i, a,             0)
 DEFINE_N128_OP_N128(     __m128i, abs_epi32,    vabsq_s32,      __m128i, a,             0)
+DEFINE_N128_OP_N128(     __m128i, abs_epi64,    vabsq_s64,      __m128i, a,             0)
 
 // PAVG
 
@@ -591,6 +593,62 @@ DEFINE_N128_OP_N128_N128(__m128i, sub_epi16,    neon_subq16,    __m128i, a, __m1
 DEFINE_N128_OP_N128_N128(__m128i, sub_epi32,    neon_subq32,    __m128i, a, __m128i, b, 0)
 DEFINE_N128_OP_N128_N128(__m128i, sub_epi64,    neon_subq64,    __m128i, a, __m128i, b, 0)
 
+// PMADDWD PMADDUBSW
+
+#undef _mm_madd_epi16
+#undef _mm_maddubs_epi16
+
+__forceinline
+__n128 sw_madd_epi16(__n128 a, const __n128 b)
+{
+    __n128 T;
+
+    // slower reference alternative
+
+    T.n128_i32[0] = ((__int32)a.n128_i16[0] * (__int32)b.n128_i16[0]) +
+                    ((__int32)a.n128_i16[1] * (__int32)b.n128_i16[1]);
+    T.n128_i32[1] = ((__int32)a.n128_i16[2] * (__int32)b.n128_i16[2]) +
+                    ((__int32)a.n128_i16[3] * (__int32)b.n128_i16[3]);
+    T.n128_i32[2] = ((__int32)a.n128_i16[4] * (__int32)b.n128_i16[4]) +
+                    ((__int32)a.n128_i16[5] * (__int32)b.n128_i16[5]);
+    T.n128_i32[3] = ((__int32)a.n128_i16[6] * (__int32)b.n128_i16[6]) +
+                    ((__int32)a.n128_i16[7] * (__int32)b.n128_i16[7]);
+
+    return T;
+}
+
+__forceinline
+__n128 sw_maddubs_epi16(__n128 a, const __n128 b)
+{
+    __n128 T;
+
+    // slower reference alternative
+    // A lanes are zero-extended
+    // B lanes are sign-extended
+
+    T.n128_i16[0] = _SaturateI16(((__int32)a.n128_u8[0] * (__int32)b.n128_i8[0]) +
+                                 ((__int32)a.n128_u8[1] * (__int32)b.n128_i8[1]));
+    T.n128_i16[1] = _SaturateI16(((__int32)a.n128_u8[2] * (__int32)b.n128_i8[2]) +
+                                 ((__int32)a.n128_u8[3] * (__int32)b.n128_i8[3]));
+    T.n128_i16[2] = _SaturateI16(((__int32)a.n128_u8[4] * (__int32)b.n128_i8[4]) +
+                                 ((__int32)a.n128_u8[5] * (__int32)b.n128_i8[5]));
+    T.n128_i16[3] = _SaturateI16(((__int32)a.n128_u8[6] * (__int32)b.n128_i8[6]) +
+                                 ((__int32)a.n128_u8[7] * (__int32)b.n128_i8[7]));
+    T.n128_i16[4] = _SaturateI16(((__int32)a.n128_u8[8] * (__int32)b.n128_i8[8]) +
+                                 ((__int32)a.n128_u8[9] * (__int32)b.n128_i8[9]));
+    T.n128_i16[5] = _SaturateI16(((__int32)a.n128_u8[10] * (__int32)b.n128_i8[10]) +
+                                 ((__int32)a.n128_u8[11] * (__int32)b.n128_i8[11]));
+    T.n128_i16[6] = _SaturateI16(((__int32)a.n128_u8[12] * (__int32)b.n128_i8[12]) +
+                                 ((__int32)a.n128_u8[13] * (__int32)b.n128_i8[13]));
+    T.n128_i16[7] = _SaturateI16(((__int32)a.n128_u8[14] * (__int32)b.n128_i8[14]) +
+                                 ((__int32)a.n128_u8[15] * (__int32)b.n128_i8[15]));
+
+    return T;
+}
+
+DEFINE_N128_OP_N128_N128(__m128i, madd_epi16,   sw_madd_epi16,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, maddubs_epi16,sw_maddubs_epi16, __m128i, a, __m128i, b, 0)
+
 // PMULDQ PMULUDQ
 
 #undef _mm_mul_epi32
@@ -601,8 +659,8 @@ __n128 sw_mulq_s32(__n128 a, const __n128 b)
 {
     __n128 T;
 
-    T.n128_u64[0] = (__int64)(__int32)a.n128_u32[0] * (__int64)(__int32)b.n128_u32[0];
-    T.n128_u64[1] = (__int64)(__int32)a.n128_u32[2] * (__int64)(__int32)b.n128_u32[2];
+    T.n128_u64[0] = (__int64)a.n128_i32[0] * (__int64)b.n128_i32[0];
+    T.n128_u64[1] = (__int64)a.n128_i32[2] * (__int64)b.n128_i32[2];
 
     return T;
 }
@@ -658,10 +716,10 @@ __n128i sw_hadds_epi16(__n128i a, const __n128i b)
     // slower reference alternative
 
     for (unsigned i = 0; i < 4; i++)
-        T.n128_u16[i] = _SaturateI16((__int16)a.n128_u16[i+i] + (__int16)a.n128_u16[i+i+1]);
+        T.n128_u16[i] = _SaturateI16((__int16)a.n128_i16[i+i] + (__int16)a.n128_i16[i+i+1]);
 
     for (unsigned i = 0; i < 4; i++)
-        T.n128_u16[i+4] = _SaturateI16((__int16)b.n128_u16[i+i] + (__int16)b.n128_u16[i+i+1]);
+        T.n128_u16[i+4] = _SaturateI16((__int16)b.n128_i16[i+i] + (__int16)b.n128_i16[i+i+1]);
 #endif
 
     return T;
@@ -742,10 +800,10 @@ __n128 sw_hsubs_epi16(__n128 a, const __n128 b)
     // slower reference alternative
 
     for (unsigned i = 0; i < 4; i++)
-        T.n128_u16[i] = _SaturateI16((__int16)a.n128_u16[i+i] - (__int16)a.n128_u16[i+i+1]);
+        T.n128_u16[i] = _SaturateI16((__int16)a.n128_i16[i+i] - (__int16)a.n128_i16[i+i+1]);
 
     for (unsigned i = 0; i < 4; i++)
-        T.n128_u16[i+4] = _SaturateI16((__int16)b.n128_u16[i+i] - (__int16)b.n128_u16[i+i+1]);
+        T.n128_u16[i+4] = _SaturateI16((__int16)b.n128_i16[i+i] - (__int16)b.n128_i16[i+i+1]);
 #endif
 
     return T;
@@ -1301,6 +1359,7 @@ typedef __n128x2 __n256i; // twin of __m256i
 
 //                    conversion-func         type_out  type_in
 
+SIMD_REINTERPRET_CAST(_mm256_castsi128_si256, __m256i,  __m128i)
 SIMD_REINTERPRET_CAST(_mm256_castsi256_si128, __m128i,  __m256i)
 SIMD_REINTERPRET_CAST(_mm256_castsi256_pd,    __m256d,  __m256i)
 SIMD_REINTERPRET_CAST(_mm256_castsi256_ps,    __m256,   __m256i)
@@ -1386,6 +1445,29 @@ __forceinline
 __m256 _mm256_set1_ps(float _F0)
 {
     return _mm256_set_ps(_F0, _F0, _F0, _F0, _F0, _F0, _F0, _F0);
+}
+
+__forceinline
+__m256i _mm256_set_epi32(int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0)
+{
+    __m256i T;
+
+    T.m256i_u32[0] = e0;
+    T.m256i_u32[1] = e1;
+    T.m256i_u32[2] = e2;
+    T.m256i_u32[3] = e3;
+    T.m256i_u32[4] = e4;
+    T.m256i_u32[5] = e5;
+    T.m256i_u32[6] = e6;
+    T.m256i_u32[7] = e7;
+
+    return T;
+}
+
+__forceinline
+__m256i _mm256_set1_epi32(const int a)
+{
+    return _mm256_set_epi32(a, a, a, a, a, a, a, a);
 }
 
 __forceinline
@@ -1632,6 +1714,11 @@ DEFINE_N256_OP_N256_N256(__m256i, sub_epi16,    neon_subq16,    __m256i, a, __m2
 DEFINE_N256_OP_N256_N256(__m256i, sub_epi32,    neon_subq32,    __m256i, a, __m256i, b, 0)
 DEFINE_N256_OP_N256_N256(__m256i, sub_epi64,    neon_subq64,    __m256i, a, __m256i, b, 0)
 
+// VPMADDWD VPMADDUBSW
+
+// DEFINE_N256_OP_N256_N256(__m256i, madd_epi16,   sw_madd_epi16,  __m256i, a, __m256i, b, 0)
+// DEFINE_N256_OP_N256_N256(__m256i, maddubs_epi16,sw_maddubs_epi16, __m256i, a, __m256i, b, 0)
+
 // VPMULDQ VMULUDQ
 
 DEFINE_N256_OP_N256_N256(__m256i, mul_epi32,    sw_mulq_s32,    __m256i, a, __m256i, b, 0)
@@ -1818,6 +1905,43 @@ __m128 _mm256_extractf128_ps(__m256 a, const int imm8)
     return T;
 }
 
+// VEXTRACTI128
+
+__forceinline
+__m128i _mm256_extracti128_si256(__m256i a, const int imm8)
+{
+    __m128i T = *(__m128i *)&a.m256i_u64[(imm8 & 1) << 1];
+    return T;
+}
+
+// VINSERTF128
+
+__forceinline
+__m256d _mm256_insertf128_pd(__m256d a, __m128d b, const int imm8)
+{
+    __m256d T = a;
+    *(__m128d *)&T.m256d_f64[(imm8 & 1) << 1] = b;
+    return T;
+}
+
+__forceinline
+__m256 _mm256_insertf128_ps(__m256 a, __m128 b, const int imm8)
+{
+    __m256 T = a;
+    *(__m128 *)&T.m256_f32[(imm8 & 1) << 2] = b;
+    return T;
+}
+
+// VINSERTI128
+
+__forceinline
+__m256i _mm256_inserti128_si256(__m256i a, __m128i b, const int imm8)
+{
+    __m256i T = a;
+    *(__m128i *)&T.m256i_u64[(imm8 & 1) << 1] = b;
+    return T;
+}
+
 // VPERF2F128
 
 __forceinline
@@ -1832,7 +1956,7 @@ __n256i _nn256_permute2f128_si256 (__n256i a, __n256i b, const int imm8)
 }
 
 __forceinline
-__m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, const int imm8)
+__m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
 {
     return _nn256_castn256_si256( _nn256_permute2f128_si256(_nn256_castsi256_n256(a), _nn256_castsi256_n256(b), imm8) );
 }
@@ -1940,14 +2064,14 @@ __n256 _nn256_sw_cvtepi32_ps(__n256i a)
 {
     __n256 T;
 
-    T.val[0].n128_f32[0] = (float)(__int32)a.val[0].n128_u32[0];
-    T.val[0].n128_f32[1] = (float)(__int32)a.val[0].n128_u32[1];
-    T.val[0].n128_f32[2] = (float)(__int32)a.val[0].n128_u32[2];
-    T.val[0].n128_f32[3] = (float)(__int32)a.val[0].n128_u32[3];
-    T.val[1].n128_f32[0] = (float)(__int32)a.val[1].n128_u32[0];
-    T.val[1].n128_f32[1] = (float)(__int32)a.val[1].n128_u32[1];
-    T.val[1].n128_f32[2] = (float)(__int32)a.val[1].n128_u32[2];
-    T.val[1].n128_f32[3] = (float)(__int32)a.val[1].n128_u32[3];
+    T.val[0].n128_f32[0] = (float)a.val[0].n128_i32[0];
+    T.val[0].n128_f32[1] = (float)a.val[0].n128_i32[1];
+    T.val[0].n128_f32[2] = (float)a.val[0].n128_i32[2];
+    T.val[0].n128_f32[3] = (float)a.val[0].n128_i32[3];
+    T.val[1].n128_f32[0] = (float)a.val[1].n128_i32[0];
+    T.val[1].n128_f32[1] = (float)a.val[1].n128_i32[1];
+    T.val[1].n128_f32[2] = (float)a.val[1].n128_i32[2];
+    T.val[1].n128_f32[3] = (float)a.val[1].n128_i32[3];
 
     return T;
 }
@@ -2236,6 +2360,21 @@ DEFINE_M256_OP_M256_M256(__m256 , __m128 , addsub_ps,     __m256 , __m128 , __m2
 DEFINE_M256_OP_M256_M256(__m256d, __m128d, hsub_pd,       __m256d, __m128d, __m256d, __m128d)
 DEFINE_M256_OP_M256_M256(__m256 , __m128 , hsub_ps,       __m256 , __m128 , __m256 , __m128 )
 
+DEFINE_M256_OP_M256_M256(__m256i, __m128i, madd_epi16,    __m256i, __m128i, __m256i, __m128i)
+DEFINE_M256_OP_M256_M256(__m256i, __m128i, maddubs_epi16, __m256i, __m128i, __m256i, __m128i)
+
+// AES uses different data types for SSE and AVX variants
+
+#define _mm_aesdec_epi128      _mm_aesdec_si128
+#define _mm_aesdeclast_epi128  _mm_aesdeclast_si128
+#define _mm_aesenc_epi128      _mm_aesenc_si128
+#define _mm_aesenclast_epi128  _mm_aesenclast_si128
+
+DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesdec_epi128, __m256i, __m128i, __m256i, __m128i)
+DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesenc_epi128, __m256i, __m128i, __m256i, __m128i)
+DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesdeclast_epi128, __m256i, __m128i, __m256i, __m128i)
+DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesenclast_epi128, __m256i, __m128i, __m256i, __m128i)
+
 //
 // Template for double-wide 256-bit dest,source1,source2,imm8 vector instructions
 //
@@ -2265,6 +2404,11 @@ DEFINE_M256_OP_M256_M256_IMM8(__m256 , __m128 , dp_ps,         __m256 , __m128 ,
 DEFINE_M256_OP_M256_M256_IMM8(__m256d, __m128d, shuffle_pd,    __m256d, __m128d, __m256d, __m128d, 2)
 DEFINE_M256_OP_M256_M256_IMM8(__m256 , __m128 , shuffle_ps,    __m256 , __m128 , __m256 , __m128 , 0)
 
+// PCLMUL uses different data types for SSE and AVX variants
+
+#define _mm_clmulepi64_epi128  _mm_clmulepi64_si128
+
+DEFINE_M256_OP_M256_M256_IMM8(__m256i, __m128i, clmulepi64_epi128, __m256i, __m128i, __m256i, __m128i, 0)
 
 #pragma strict_gs_check(pop)
 
