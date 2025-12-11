@@ -273,7 +273,7 @@ __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ #
 #define DEFINE_TEST_OP_RA(op, type_ret, type_a) \
 __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a ); }
 
-#if (_MSC_VER >= 1950) && defined(__AVX2__)
+#if (_MSC_VER >= 1950) || !defined(__AVX2__)
 #define AVX2_WORKAROUND (0)
 #else
 #define AVX2_WORKAROUND (1)
@@ -363,11 +363,21 @@ uint32_t LookUpRegBit(int Function, int Sub, CPUID_REGS Reg, int Bit)
 }
 
 #if (defined(USE_SOFT_INTRINSICS) && (USE_SOFT_INTRINSICS >= 2))
-__forceinline
-bool HasAVX2()     { return true; }
+__forceinline bool HasAVX2()     { return true; }
+__forceinline bool HasSHANI()    { return false; }
+__forceinline bool HasVAES()     { return true; }
+__forceinline bool HasVPCLMUL()  { return true; }
+__forceinline bool HasAVXVNNI()  { return true; }
+__forceinline bool HasAVXVNNI8() { return false; }
+__forceinline bool HasAVXVNNI16(){ return false; }
 #else
-__forceinline
-bool HasAVX2()     { return LookUpRegBit(7, 0, CPUID_EBX,  5); }
+__forceinline bool HasAVX2()     { return LookUpRegBit(7, 0, CPUID_EBX,  5); }
+__forceinline bool HasSHANI()    { return LookUpRegBit(7, 0, CPUID_EBX, 29); }
+__forceinline bool HasVAES()     { return LookUpRegBit(7, 0, CPUID_ECX,  9); }
+__forceinline bool HasVPCLMUL()  { return LookUpRegBit(7, 0, CPUID_ECX, 10); }
+__forceinline bool HasAVXVNNI()  { return LookUpRegBit(7, 1, CPUID_EAX,  4); }
+__forceinline bool HasAVXVNNI8() { return LookUpRegBit(7, 1, CPUID_EDX,  4); }
+__forceinline bool HasAVXVNNI16(){ return LookUpRegBit(7, 1, CPUID_EDX, 10); }
 #endif
 
 // for timeBeginPeriod / timeEndPeriod
@@ -382,8 +392,7 @@ int main (int argc, char **argv)
     //
     // This will occur on older (pre-Haswell) Intel Core CPUs, on older AMD, and when using Windows on ARM builds prior to build 27744, e.g. 24H2.
     // See https://blogs.windows.com/windows-insider/2024/11/06/announcing-windows-11-insider-preview-build-27744-canary-channel/
-    //
-    // Windows Insider Canary build 27842 is the minimum recommended as that is the most recent version I tested this week! :-)
+    // See https://techcommunity.microsoft.com/blog/windowsosplatform/windows-on-arm-runs-more-apps-and-games-with-new-prism-update/4475631
     //
     // AVX2 support many also not be enabled in 32-bit x86 emulation mode or older version of Rosetta 2.
     //
@@ -393,6 +402,15 @@ int main (int argc, char **argv)
         printf("AVX2 is not supported by this x86 CPU, exiting...\n");
         return 0;
     }
+
+#endif
+
+#if (defined(_M_ARM64) || defined(_M_ARM64EC)) && (USE_SOFT_INTRINSICS >= 2)
+
+    // To implement AVX-VNNI efficiency requires availability of I8MM extensions
+    // Has_I8MM is declared in softintrin_avx2.h
+
+    Has_I8MM = IsProcessorFeaturePresent(PF_ARM_V82_I8MM_INSTRUCTIONS_AVAILABLE) != FALSE;
 
 #endif
 
