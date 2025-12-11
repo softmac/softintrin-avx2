@@ -201,6 +201,12 @@ __m128d _mm_setzero_pd(void)
 #undef _mm_set_pd1
 
 __forceinline
+__n128 _nn_set1_epi32(const int a)
+{
+    return neon_dupqr32(a);
+}
+
+__forceinline
 __m128i _mm_set1_epi32(const int a)
 {
 //  return _nn128_castn128_si128(neon_dupqr32(a));
@@ -2375,6 +2381,8 @@ DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesenc_epi128, __m256i, __m128i, __m2
 DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesdeclast_epi128, __m256i, __m128i, __m256i, __m128i)
 DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesenclast_epi128, __m256i, __m128i, __m256i, __m128i)
 
+#define __VAES__
+
 //
 // Template for double-wide 256-bit dest,source1,source2,imm8 vector instructions
 //
@@ -2409,6 +2417,92 @@ DEFINE_M256_OP_M256_M256_IMM8(__m256 , __m128 , shuffle_ps,    __m256 , __m128 ,
 #define _mm_clmulepi64_epi128  _mm_clmulepi64_si128
 
 DEFINE_M256_OP_M256_M256_IMM8(__m256i, __m128i, clmulepi64_epi128, __m256i, __m128i, __m256i, __m128i, 0)
+
+//
+// AVX-VNNI
+//
+
+// VPDPBUSD VPDPBUSDS
+
+#if _M_ARM64_EXTENSION >= 86
+__declspec(selectany) int Has_I8MM = 1;
+#else
+__declspec(selectany) int Has_I8MM = 0;
+#endif
+
+
+__forceinline
+__n128 sw_dpbusd_epi32(__n128 c, __n128 a, __n128 b)
+{
+    __n128 T;
+
+    if (Has_I8MM)
+    {
+        // FEAT_I8MM is ARMv8.6, found on Snapdragon X and Apple M3
+
+        T = vusdotq_s32(c, a, b);
+    }
+    else
+    {
+        // Legacy ARMv8.0 NEON implementation
+
+        T = _nn_maddubs_epi16(a, b);
+        T = _nn_madd_epi16(T, _nn_set1_epi32(0x00010001));
+        T = neon_addq32(c, T);
+    }
+
+    return T;
+}
+
+__forceinline
+__n128 sw_dpbusds_epi32(__n128 c, __n128 a, __n128 b)
+{
+    // This is a saturating version of VPDPBUS,
+    // compute dot-product separately then saturate the sum
+
+    __n128 T = neon_moviqw(0);
+
+    T = sw_dpbusd_epi32(T, a, b);
+    T = neon_sqaddq32(c, T);
+
+    return T;
+}
+
+// VPDPWSSD VPDPWSSDS
+
+__forceinline
+__n128 sw_dpwssd_epi32(__n128 c, __n128 a, __n128 b)
+{
+    __n128 T;
+
+    T = sw_madd_epi16(a, b);
+    T = neon_addq32(c, T);
+
+    return T;
+}
+
+__forceinline
+__n128 sw_dpwssds_epi32(__n128 c, __n128 a, __n128 b)
+{
+    __n128 T;
+
+    T = sw_madd_epi16(a, b);
+    T = neon_sqaddq32(c, T);
+
+    return T;
+}
+
+DEFINE_N128_OP_N128_N128_N128(__m128i, dpbusd_avx_epi32,  sw_dpbusd_epi32,  __m128i, a, __m128i, b, __m128i, c,    0)
+DEFINE_N128_OP_N128_N128_N128(__m128i, dpbusds_avx_epi32, sw_dpbusds_epi32, __m128i, a, __m128i, b, __m128i, c,    0)
+DEFINE_N128_OP_N128_N128_N128(__m128i, dpwssd_avx_epi32,  sw_dpwssd_epi32,  __m128i, a, __m128i, b, __m128i, c,    0)
+DEFINE_N128_OP_N128_N128_N128(__m128i, dpwssds_avx_epi32, sw_dpwssds_epi32, __m128i, a, __m128i, b, __m128i, c,    0)
+
+DEFINE_N256_OP_N256_N256_N256(__m256i, dpbusd_avx_epi32,  sw_dpbusd_epi32,  __m256i, a, __m256i, b, __m256i, c,    0)
+DEFINE_N256_OP_N256_N256_N256(__m256i, dpbusds_avx_epi32, sw_dpbusds_epi32, __m256i, a, __m256i, b, __m256i, c,    0)
+DEFINE_N256_OP_N256_N256_N256(__m256i, dpwssd_avx_epi32,  sw_dpwssd_epi32,  __m256i, a, __m256i, b, __m256i, c,    0)
+DEFINE_N256_OP_N256_N256_N256(__m256i, dpwssds_avx_epi32, sw_dpwssds_epi32, __m256i, a, __m256i, b, __m256i, c,    0)
+
+#define __AVX_VNNI__
 
 #pragma strict_gs_check(pop)
 

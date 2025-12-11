@@ -576,7 +576,7 @@ DEFINE_TEST_OP_RABC(_mm_sha256rnds2_epu32,  __m128i,    __m128i,    __m128i,    
 
 #endif // SHANI tests
 
-#if (defined(__AVX2__) && defined(__AVX_VNNI__)) || (defined(USE_SOFT_INTRINSICS) && (USE_SOFT_INTRINSICS >= 3))
+#if (defined(__AVX2__) && defined(__AVX_VNNI__)) || (defined(USE_SOFT_INTRINSICS) && (USE_SOFT_INTRINSICS >= 2))
 
 // Alder Lake AVX-VNNI
 
