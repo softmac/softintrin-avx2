@@ -540,6 +540,24 @@ __forceinline rettype _mm_ ## name (arg1type arg1, arg2type arg2) \
 }
 
 //
+// Template for 128-bit dest,source1,imm8 vector instructions
+//
+
+#define DEFINE_N128_OP_N128_N128_IMM8(rettype, name, intrin, arg1type, arg1, arg2type, arg2, flags) \
+\
+__forceinline __n128 _nn_ ## name (__n128 a, const __n128 b, const int imm8) \
+{ \
+    __n128 T = intrin (a, b, imm8); \
+    T = _nn_postprocess(T, a, b, flags); \
+    return T; \
+} \
+\
+__forceinline rettype _mm_ ## name (arg1type arg1, arg2type arg2, const int imm8) \
+{ \
+    return rettype ## _from___n128 ( _nn_ ## name ( __n128_from_ ## arg1type (a), __n128_from_ ## arg2type (b), imm8 ) ); \
+}
+
+//
 // Template for spicy 128-bit dest,source1,source2,source3 vector instructions
 //
 
@@ -2381,7 +2399,7 @@ DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesenc_epi128, __m256i, __m128i, __m2
 DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesdeclast_epi128, __m256i, __m128i, __m256i, __m128i)
 DEFINE_M256_OP_M256_M256(__m256i, __m128i, aesenclast_epi128, __m256i, __m128i, __m256i, __m128i)
 
-#define __VAES__
+#define __VAES__        1
 
 //
 // Template for double-wide 256-bit dest,source1,source2,imm8 vector instructions
@@ -2436,9 +2454,9 @@ __n128 sw_dpbusd_epi32(__n128 c, __n128 a, __n128 b)
 {
     __n128 T;
 
-    if (Has_I8MM)
+    if ((_M_ARM64_EXTENSION >= 86) || Has_I8MM)
     {
-        // FEAT_I8MM is ARMv8.6, found on Snapdragon X and Apple M3
+        // FEAT_I8MM is ARMv8.6, found on Snapdragon X and Apple M3+
 
         T = vusdotq_s32(c, a, b);
     }
@@ -2502,7 +2520,90 @@ DEFINE_N256_OP_N256_N256_N256(__m256i, dpbusds_avx_epi32, sw_dpbusds_epi32, __m2
 DEFINE_N256_OP_N256_N256_N256(__m256i, dpwssd_avx_epi32,  sw_dpwssd_epi32,  __m256i, a, __m256i, b, __m256i, c,    0)
 DEFINE_N256_OP_N256_N256_N256(__m256i, dpwssds_avx_epi32, sw_dpwssds_epi32, __m256i, a, __m256i, b, __m256i, c,    0)
 
-#define __AVX_VNNI__
+#define __AVX_VNNI__    1
+
+//
+// SHANI (128-bit SSE extensions using legacy prefixes, no 256-bit version or VEX-prefixed version)
+//
+
+#undef   _mm_sha1msg1_epu32
+#undef   _mm_sha1msg2_epu32
+#undef   _mm_sha1nexte_epu32
+
+__forceinline
+__n128 sw_sha1msg1_epu32(__n128 a, __n128 b)
+{
+    __n128 T;
+
+#if 1
+
+    // SHA1MSG1 -> SHA1SU0
+
+    T = neon_sha1su0(b, a, neon_eorq(a, b));
+
+#else
+
+    // slower reference alternative
+
+    T.n128_u64[0] = a.n128_u64[0] ^ b.n128_u64[1];
+    T.n128_u64[1] = a.n128_u64[0] ^ a.n128_u64[1];
+
+#endif
+
+    return T;
+}
+
+__forceinline
+__n128 sw_sha1msg2_epu32(__n128 a, __n128 b)
+{
+    __n128 T;
+
+    // SHA1SU1?
+//  T = neon_sha1su1(a, b);
+
+    // slower reference alternative
+
+    T.n128_u32[3] = _rotl(a.n128_u32[3] ^ b.n128_u32[2], 1);
+    T.n128_u32[2] = _rotl(a.n128_u32[2] ^ b.n128_u32[1], 1);
+    T.n128_u32[1] = _rotl(a.n128_u32[1] ^ b.n128_u32[0], 1);
+    T.n128_u32[0] = _rotl(a.n128_u32[0] ^ _rotl(a.n128_u32[3] ^ b.n128_u32[2], 1), 1);
+
+    return T;
+}
+
+__forceinline
+__n128 sw_sha1nexte_epu32(__n128 a, __n128 b)
+{
+    __n128 T = b;
+
+    // SHA1NEXTE -> SHA1H
+
+#if 1
+
+    __n128 I = neon_insqe32q(neon_moviqw(0), 0, a, 3);
+    __n128 R = neon_insqe32q(neon_moviqw(0), 3, neon_sha1h(I), 0);
+    T = neon_addq32(T, R);
+
+#else
+
+    // slower reference alternative
+
+    T.n128_u32[3] += _rotl(a.n128_u32[3], 30);
+
+#endif
+
+    return T;
+}
+
+DEFINE_N128_OP_N128_N128(__m128i, sha1msg1_epu32,    sw_sha1msg1_epu32,    __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, sha1msg2_epu32,    sw_sha1msg2_epu32,    __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, sha1nexte_epu32,   sw_sha1nexte_epu32,   __m128i, a, __m128i, b, 0)
+
+#undef   _mm_sha256msg1_epu32
+
+DEFINE_N128_OP_N128_N128(__m128i, sha256msg1_epu32,  neon_sha256su0,       __m128i, a, __m128i, b, 0)
+
+#define __SHANI__       1
 
 #pragma strict_gs_check(pop)
 
