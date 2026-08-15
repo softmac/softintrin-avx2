@@ -559,7 +559,7 @@ DEFINE_TEST_OP_RABI(_mm256_clmulepi64_epi128,__m256i,    __m256i,    __m256i,   
 
 #endif // AVX2 VAES tests
 
-#if (defined(__AVX2__) && defined(__SHANI__)) || (defined(USE_SOFT_INTRINSICS) && (USE_SOFT_INTRINSICS >= 3))
+#if (defined(__AVX2__) && defined(__SHANI__)) || (defined(USE_SOFT_INTRINSICS) && (USE_SOFT_INTRINSICS >= 2))
 
 // 128-bit SHA (introduced in Zen2, Pentium Silver)
 

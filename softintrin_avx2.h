@@ -2600,10 +2600,17 @@ __n128 sw_sha1msg1_epu32(__n128 a, __n128 b)
 __forceinline
 __n128 sw_sha1msg2_epu32(__n128 a, __n128 b)
 {
-    __n128 T;
 
-    // SHA1SU1?
-//  T = neon_sha1su1(a, b);
+#if 1
+
+    // SHA1SU1 uses the opposite dword order from SHA1MSG2.
+
+    a = neon_rev64q_32(neon_extq8(a, a, 8));
+    b = neon_rev64q_32(neon_extq8(b, b, 8));
+    a = neon_sha1su1(a, b);
+    return neon_rev64q_32(neon_extq8(a, a, 8));
+
+#else
 
     // slower reference alternative
 
@@ -2613,6 +2620,9 @@ __n128 sw_sha1msg2_epu32(__n128 a, __n128 b)
     T.n128_u32[0] = _rotl(a.n128_u32[0] ^ _rotl(a.n128_u32[3] ^ b.n128_u32[2], 1), 1);
 
     return T;
+
+#endif
+
 }
 
 __forceinline
@@ -2643,9 +2653,87 @@ DEFINE_N128_OP_N128_N128(__m128i, sha1msg1_epu32,    sw_sha1msg1_epu32,    __m12
 DEFINE_N128_OP_N128_N128(__m128i, sha1msg2_epu32,    sw_sha1msg2_epu32,    __m128i, a, __m128i, b, 0)
 DEFINE_N128_OP_N128_N128(__m128i, sha1nexte_epu32,   sw_sha1nexte_epu32,   __m128i, a, __m128i, b, 0)
 
+#undef   _mm_sha1rnds4_epu32
+
+__forceinline
+__n128 sw_sha1rnds4_epu32(__n128 a, __n128 b, const int imm8)
+{
+    unsigned __int32 RoundConstant;
+
+    // Arm's SHA1 round instructions use the opposite dword order.
+
+    a = neon_rev64q_32(neon_extq8(a, a, 8));
+    b = neon_rev64q_32(neon_extq8(b, b, 8));
+
+    switch (imm8 & 3)
+    {
+        case 0:
+            RoundConstant = 0x5A827999;
+            b = neon_addq32(b, neon_dupqr32(RoundConstant));
+            a = neon_sha1cui(a, 0, b);
+            break;
+
+        case 1:
+            RoundConstant = 0x6ED9EBA1;
+            b = neon_addq32(b, neon_dupqr32(RoundConstant));
+            a = neon_sha1pui(a, 0, b);
+            break;
+
+        case 2:
+            RoundConstant = 0x8F1BBCDC;
+            b = neon_addq32(b, neon_dupqr32(RoundConstant));
+            a = neon_sha1mui(a, 0, b);
+            break;
+
+        default:
+            RoundConstant = 0xCA62C1D6;
+            b = neon_addq32(b, neon_dupqr32(RoundConstant));
+            a = neon_sha1pui(a, 0, b);
+            break;
+    }
+
+    return neon_rev64q_32(neon_extq8(a, a, 8));
+}
+
+DEFINE_N128_OP_N128_N128_IMM8(__m128i, sha1rnds4_epu32, sw_sha1rnds4_epu32, __m128i, a, __m128i, b, 0)
+
 #undef   _mm_sha256msg1_epu32
+#undef   _mm_sha256msg2_epu32
+
+__forceinline
+__n128 sw_sha256msg2_epu32(__n128 a, __n128 b)
+{
+    const __n128 Zero = neon_moviqw(0);
+    const __n128 ResultLow = neon_sha256su1(a, Zero, b);
+    const __n128 ResultLowDup = neon_trn1_q64(ResultLow, ResultLow);
+    const __n128 InputHigh = neon_extq8(a, a, 8);
+    const __n128 ResultHigh = neon_sha256su1(InputHigh, Zero, ResultLowDup);
+
+    return neon_extq8(ResultLowDup, ResultHigh, 8);
+}
 
 DEFINE_N128_OP_N128_N128(__m128i, sha256msg1_epu32,  neon_sha256su0,       __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, sha256msg2_epu32,  sw_sha256msg2_epu32,  __m128i, a, __m128i, b, 0)
+
+#undef   _mm_sha256rnds2_epu32
+
+__forceinline
+__n128 sw_sha256rnds2_epu32(__n128 a, __n128 b, __n128 c)
+{
+    // Convert Intel's ABEF/CDGH layout to Arm's ABCD/EFGH layout.
+    a = neon_rev64q_32(a);
+    b = neon_rev64q_32(b);
+
+    const __n128 StateLow = neon_zip1_q64(b, a);
+    const __n128 StateHigh = neon_zip2_q64(b, a);
+    const __n128 ResultHigh = neon_sha256h(StateHigh, StateLow, c);
+    const __n128 ResultLow = neon_sha256h2(StateLow, StateHigh, c);
+
+    // Convert the updated state back to Intel's ABEF layout.
+    return neon_rev64q_32(neon_zip2_q64(ResultLow, ResultHigh));
+}
+
+DEFINE_N128_OP_N128_N128_N128(__m128i, sha256rnds2_epu32, sw_sha256rnds2_epu32, __m128i, a, __m128i, b, __m128i, c, 0)
 
 #define __SHANI__       1
 
