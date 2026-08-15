@@ -711,6 +711,32 @@ DEFINE_N128_OP_N128_N128(__m128i, mul_epu32,    sw_mulq_u32,    __m128i, a, __m1
 DEFINE_N128_OP_N128_N128(__m128i, mullo_epi16,  vmulq_s16,      __m128i, a, __m128i, b, 0)
 DEFINE_N128_OP_N128_N128(__m128i, mullo_epi32,  vmulq_s32,      __m128i, a, __m128i, b, 0)
 
+// PMULHI
+
+#undef _mm_mulhi_epi16
+#undef _mm_mulhi_epu16
+
+__forceinline
+__n128 neon_mulhi_s16(__n128 a, const __n128 b)
+{
+    const int32x4_t ProductLow = vmull_s16(vget_low_s16(a), vget_low_s16(b));
+    const int32x4_t ProductHigh = vmull_high_s16(a, b);
+
+    return vshrn_high_n_s32(vshrn_n_s32(ProductLow, 16), ProductHigh, 16);
+}
+
+__forceinline
+__n128 neon_mulhi_u16(__n128 a, const __n128 b)
+{
+    const uint32x4_t ProductLow = vmull_u16(vget_low_u16(a), vget_low_u16(b));
+    const uint32x4_t ProductHigh = vmull_high_u16(a, b);
+
+    return vshrn_high_n_u32(vshrn_n_u32(ProductLow, 16), ProductHigh, 16);
+}
+
+DEFINE_N128_OP_N128_N128(__m128i, mulhi_epi16, neon_mulhi_s16, __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, mulhi_epu16, neon_mulhi_u16, __m128i, a, __m128i, b, 0)
+
 // PMULHRSW
 
 #undef _mm_mulhrs_epi16
