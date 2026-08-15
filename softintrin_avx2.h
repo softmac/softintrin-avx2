@@ -558,6 +558,24 @@ __forceinline rettype _mm_ ## name (arg1type arg1, arg2type arg2, const int imm8
 }
 
 //
+// Template for 128-bit dest,source1,imm8 vector instructions
+//
+
+#define DEFINE_N128_OP_N128_IMM8(rettype, name, intrin, arg1type, arg1, flags) \
+\
+__forceinline __n128 _nn_ ## name (const __n128 a, const int imm8) \
+{ \
+    __n128 T = intrin (a, imm8); \
+    T = _nn_postprocess(T, a, a, flags); \
+    return T; \
+} \
+\
+__forceinline rettype _mm_ ## name (arg1type arg1, const int imm8) \
+{ \
+    return rettype ## _from___n128 ( _nn_ ## name ( __n128_from_ ## arg1type (a), imm8 ) ); \
+}
+
+//
 // Template for spicy 128-bit dest,source1,source2,source3 vector instructions
 //
 
@@ -1104,6 +1122,322 @@ __m128 _mm_sqrt_ss(__m128 a)
 {
     return _nn128_castn128_ps( _nn_sqrt_ss(_nn128_castps_n128(a)) );
 }
+
+// PSLL PSRL PSRA
+
+#undef _mm_sll_epi16
+#undef _mm_sll_epi32
+#undef _mm_sll_epi64
+#undef _mm_slli_epi16
+#undef _mm_slli_epi32
+#undef _mm_slli_epi64
+#undef _mm_slli_si128
+
+#undef _mm_sra_epi16
+#undef _mm_sra_epi32
+#undef _mm_sra_epi64
+#undef _mm_srai_epi16
+#undef _mm_srai_epi32
+#undef _mm_srai_epi64
+
+#undef _mm_srl_epi16
+#undef _mm_srl_epi32
+#undef _mm_srl_epi64
+#undef _mm_srli_epi16
+#undef _mm_srli_epi32
+#undef _mm_srli_epi64
+#undef _mm_srli_si128
+
+__forceinline
+__n128i sw_sll_epi16(__n128i a, const __n128i b)
+{
+    const unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 16)
+        return neon_moviqw(0);
+
+    return vshlq_u16(a, vmovq_n_s16((__int16)Count));
+}
+
+__forceinline
+__n128i sw_sll_epi32(__n128i a, const __n128i b)
+{
+    const unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 32)
+        return neon_moviqw(0);
+
+    return vshlq_u32(a, vmovq_n_s32((__int32)Count));
+}
+
+__forceinline
+__n128i sw_sll_epi64(__n128i a, const __n128i b)
+{
+    const unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 64)
+        return neon_moviqw(0);
+
+    return vshlq_u64(a, vmovq_n_s64((__int64)Count));
+}
+
+__forceinline
+__n128i sw_slli_epi16(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 16)
+        return neon_moviqw(0);
+
+    return vshlq_u16(a, vmovq_n_s16((__int16)Count));
+}
+
+__forceinline
+__n128i sw_slli_epi32(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 32)
+        return neon_moviqw(0);
+
+    return vshlq_u32(a, vmovq_n_s32((__int32)Count));
+}
+
+__forceinline
+__n128i sw_slli_epi64(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 64)
+        return neon_moviqw(0);
+
+    return vshlq_u64(a, vmovq_n_s64((__int64)Count));
+}
+
+__forceinline
+__n128i sw_slli_si128(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+    const __n128i Zero = neon_moviqw(0);
+
+    switch (Count)
+    {
+    case 0:  return a;
+    case 1:  return neon_extq8(Zero, a, 15);
+    case 2:  return neon_extq8(Zero, a, 14);
+    case 3:  return neon_extq8(Zero, a, 13);
+    case 4:  return neon_extq8(Zero, a, 12);
+    case 5:  return neon_extq8(Zero, a, 11);
+    case 6:  return neon_extq8(Zero, a, 10);
+    case 7:  return neon_extq8(Zero, a, 9);
+    case 8:  return neon_extq8(Zero, a, 8);
+    case 9:  return neon_extq8(Zero, a, 7);
+    case 10: return neon_extq8(Zero, a, 6);
+    case 11: return neon_extq8(Zero, a, 5);
+    case 12: return neon_extq8(Zero, a, 4);
+    case 13: return neon_extq8(Zero, a, 3);
+    case 14: return neon_extq8(Zero, a, 2);
+    case 15: return neon_extq8(Zero, a, 1);
+    default: return Zero;
+    }
+}
+
+__forceinline
+__n128i sw_sra_epi16(__n128i a, const __n128i b)
+{
+    unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 16)
+        Count = 15;
+
+    return vshlq_s16(a, vmovq_n_s16(-(__int16)Count));
+}
+
+__forceinline
+__n128i sw_sra_epi32(__n128i a, const __n128i b)
+{
+    unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 32)
+        Count = 31;
+
+    return vshlq_s32(a, vmovq_n_s32(-(__int32)Count));
+}
+
+__forceinline
+__n128i sw_sra_epi64(__n128i a, const __n128i b)
+{
+    unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 64)
+        Count = 63;
+
+    return vshlq_s64(a, vmovq_n_s64(-(__int64)Count));
+}
+
+__forceinline
+__n128i sw_srai_epi16(__n128i a, const int imm8)
+{
+    unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 16)
+        Count = 15;
+
+    return vshlq_s16(a, vmovq_n_s16(-(__int16)Count));
+}
+
+__forceinline
+__n128i sw_srai_epi32(__n128i a, const int imm8)
+{
+    unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 32)
+        Count = 31;
+
+    return vshlq_s32(a, vmovq_n_s32(-(__int32)Count));
+}
+
+__forceinline
+__n128i sw_srai_epi64(__n128i a, const int imm8)
+{
+    unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 64)
+        Count = 63;
+
+    return vshlq_s64(a, vmovq_n_s64(-(__int64)Count));
+}
+
+__forceinline
+__n128i sw_srl_epi16(__n128i a, const __n128i b)
+{
+    const unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 16)
+        return neon_moviqw(0);
+
+    return vshlq_u16(a, vmovq_n_s16(-(__int16)Count));
+}
+
+__forceinline
+__n128i sw_srl_epi32(__n128i a, const __n128i b)
+{
+    const unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 32)
+        return neon_moviqw(0);
+
+    return vshlq_u32(a, vmovq_n_s32(-(__int32)Count));
+}
+
+__forceinline
+__n128i sw_srl_epi64(__n128i a, const __n128i b)
+{
+    const unsigned __int64 Count = b.n128_u64[0];
+
+    if (Count >= 64)
+        return neon_moviqw(0);
+
+    return vshlq_u64(a, vmovq_n_s64(-(__int64)Count));
+}
+
+__forceinline
+__n128i sw_srli_epi16(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 16)
+        return neon_moviqw(0);
+
+    return vshlq_u16(a, vmovq_n_s16(-(__int16)Count));
+}
+
+__forceinline
+__n128i sw_srli_epi32(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 32)
+        return neon_moviqw(0);
+
+    return vshlq_u32(a, vmovq_n_s32(-(__int32)Count));
+}
+
+__forceinline
+__n128i sw_srli_epi64(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+
+    if (Count >= 64)
+        return neon_moviqw(0);
+
+    return vshlq_u64(a, vmovq_n_s64(-(__int64)Count));
+}
+
+__forceinline
+__n128i sw_srli_si128(__n128i a, const int imm8)
+{
+    const unsigned Count = (unsigned)imm8 & 255;
+    const __n128i Zero = neon_moviqw(0);
+
+    switch (Count)
+    {
+    case 0:  return a;
+    case 1:  return neon_extq8(a, Zero, 1);
+    case 2:  return neon_extq8(a, Zero, 2);
+    case 3:  return neon_extq8(a, Zero, 3);
+    case 4:  return neon_extq8(a, Zero, 4);
+    case 5:  return neon_extq8(a, Zero, 5);
+    case 6:  return neon_extq8(a, Zero, 6);
+    case 7:  return neon_extq8(a, Zero, 7);
+    case 8:  return neon_extq8(a, Zero, 8);
+    case 9:  return neon_extq8(a, Zero, 9);
+    case 10: return neon_extq8(a, Zero, 10);
+    case 11: return neon_extq8(a, Zero, 11);
+    case 12: return neon_extq8(a, Zero, 12);
+    case 13: return neon_extq8(a, Zero, 13);
+    case 14: return neon_extq8(a, Zero, 14);
+    case 15: return neon_extq8(a, Zero, 15);
+    default: return Zero;
+    }
+}
+
+DEFINE_N128_OP_N128_N128(__m128i, sll_epi16,  sw_sll_epi16,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, sll_epi32,  sw_sll_epi32,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, sll_epi64,  sw_sll_epi64,  __m128i, a, __m128i, b, 0)
+
+DEFINE_N128_OP_N128_IMM8(__m128i, slli_epi16, sw_slli_epi16, __m128i, a, 0)
+DEFINE_N128_OP_N128_IMM8(__m128i, slli_epi32, sw_slli_epi32, __m128i, a, 0)
+DEFINE_N128_OP_N128_IMM8(__m128i, slli_epi64, sw_slli_epi64, __m128i, a, 0)
+DEFINE_N128_OP_N128_IMM8(__m128i, slli_si128, sw_slli_si128, __m128i, a, 0)
+
+DEFINE_N128_OP_N128_N128(__m128i, sra_epi16,  sw_sra_epi16,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, sra_epi32,  sw_sra_epi32,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, sra_epi64,  sw_sra_epi64,  __m128i, a, __m128i, b, 0)
+
+DEFINE_N128_OP_N128_IMM8(__m128i, srai_epi16, sw_srai_epi16, __m128i, a, 0)
+DEFINE_N128_OP_N128_IMM8(__m128i, srai_epi32, sw_srai_epi32, __m128i, a, 0)
+
+__forceinline
+__n128 _nn_srai_epi64(const __n128 a, const unsigned int imm8)
+{
+    return sw_srai_epi64(a, imm8);
+}
+
+__forceinline
+__m128i _mm_srai_epi64(__m128i a, const unsigned int imm8)
+{
+    return __m128i_from___n128( _nn_srai_epi64(__n128_from___m128i(a), imm8) );
+}
+
+DEFINE_N128_OP_N128_N128(__m128i, srl_epi16,  sw_srl_epi16,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, srl_epi32,  sw_srl_epi32,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, srl_epi64,  sw_srl_epi64,  __m128i, a, __m128i, b, 0)
+
+DEFINE_N128_OP_N128_IMM8(__m128i, srli_epi16, sw_srli_epi16, __m128i, a, 0)
+DEFINE_N128_OP_N128_IMM8(__m128i, srli_epi32, sw_srli_epi32, __m128i, a, 0)
+DEFINE_N128_OP_N128_IMM8(__m128i, srli_epi64, sw_srli_epi64, __m128i, a, 0)
+DEFINE_N128_OP_N128_IMM8(__m128i, srli_si128, sw_srli_si128, __m128i, a, 0)
 
 // PSLLV PSRLV PSRARV
 
