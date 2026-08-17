@@ -735,7 +735,7 @@ DEFINE_N128_OP_N128_N128(__m128i, mullo_epi32,  vmulq_s32,      __m128i, a, __m1
 #undef _mm_mulhi_epu16
 
 __forceinline
-__n128 neon_mulhi_s16(__n128 a, const __n128 b)
+__n128 sw_mulhi_s16(__n128 a, const __n128 b)
 {
     const int32x4_t ProductLow = vmull_s16(vget_low_s16(a), vget_low_s16(b));
     const int32x4_t ProductHigh = vmull_high_s16(a, b);
@@ -744,7 +744,7 @@ __n128 neon_mulhi_s16(__n128 a, const __n128 b)
 }
 
 __forceinline
-__n128 neon_mulhi_u16(__n128 a, const __n128 b)
+__n128 sw_mulhi_u16(__n128 a, const __n128 b)
 {
     const uint32x4_t ProductLow = vmull_u16(vget_low_u16(a), vget_low_u16(b));
     const uint32x4_t ProductHigh = vmull_high_u16(a, b);
@@ -752,15 +752,15 @@ __n128 neon_mulhi_u16(__n128 a, const __n128 b)
     return vshrn_high_n_u32(vshrn_n_u32(ProductLow, 16), ProductHigh, 16);
 }
 
-DEFINE_N128_OP_N128_N128(__m128i, mulhi_epi16, neon_mulhi_s16, __m128i, a, __m128i, b, 0)
-DEFINE_N128_OP_N128_N128(__m128i, mulhi_epu16, neon_mulhi_u16, __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, mulhi_epi16,  sw_mulhi_s16,  __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, mulhi_epu16,  sw_mulhi_u16,  __m128i, a, __m128i, b, 0)
 
 // PMULHRSW
 
 #undef _mm_mulhrs_epi16
 
 __forceinline
-__n128 neon_mulhrs_s16(__n128 a, const __n128 b)
+__n128 sw_mulhrs_s16(__n128 a, const __n128 b)
 {
     const int32x4_t ProductLow = vmull_s16(vget_low_s16(a), vget_low_s16(b));
     const int32x4_t ProductHigh = vmull_high_s16(a, b);
@@ -768,10 +768,129 @@ __n128 neon_mulhrs_s16(__n128 a, const __n128 b)
     // RSHRN's narrowing discards the difference between signed and unsigned
     // right shifts.  Unlike SQRDMULH, it also preserves PMULHRSW's required
     // 0x8000 result for the 0x8000 * 0x8000 input pair.
+
     return vrshrn_high_n_s32(vrshrn_n_s32(ProductLow, 15), ProductHigh, 15);
 }
 
-DEFINE_N128_OP_N128_N128(__m128i, mulhrs_epi16, neon_mulhrs_s16, __m128i, a, __m128i, b, 0)
+DEFINE_N128_OP_N128_N128(__m128i, mulhrs_epi16, sw_mulhrs_s16, __m128i, a, __m128i, b, 0)
+
+// PMOVSX
+
+#undef _mm_cvtepi8_epi16
+#undef _mm_cvtepi8_epi32
+#undef _mm_cvtepi8_epi64
+#undef _mm_cvtepi16_epi32
+#undef _mm_cvtepi16_epi64
+#undef _mm_cvtepi32_epi64
+
+__forceinline
+__n128 sw_cvtepi8_epi16(__n128 a)
+{
+    return vmovl_s8(vget_low_s8(a));
+}
+
+__forceinline
+__n128 sw_cvtepi8_epi32(__n128 a)
+{
+    const int16x8_t Widened16 = vmovl_s8(vget_low_s8(a));
+
+    return vmovl_s16(vget_low_s16(Widened16));
+}
+
+__forceinline
+__n128 sw_cvtepi8_epi64(__n128 a)
+{
+    const int16x8_t Widened16 = vmovl_s8(vget_low_s8(a));
+    const int32x4_t Widened32 = vmovl_s16(vget_low_s16(Widened16));
+
+    return vmovl_s32(vget_low_s32(Widened32));
+}
+
+__forceinline
+__n128 sw_cvtepi16_epi32(__n128 a)
+{
+    return vmovl_s16(vget_low_s16(a));
+}
+
+__forceinline
+__n128 sw_cvtepi16_epi64(__n128 a)
+{
+    const int32x4_t Widened32 = vmovl_s16(vget_low_s16(a));
+
+    return vmovl_s32(vget_low_s32(Widened32));
+}
+
+__forceinline
+__n128 sw_cvtepi32_epi64(__n128 a)
+{
+    return vmovl_s32(vget_low_s32(a));
+}
+
+DEFINE_N128_OP_N128(__m128i, cvtepi8_epi16,  sw_cvtepi8_epi16,  __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepi8_epi32,  sw_cvtepi8_epi32,  __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepi8_epi64,  sw_cvtepi8_epi64,  __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepi16_epi32, sw_cvtepi16_epi32, __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepi16_epi64, sw_cvtepi16_epi64, __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepi32_epi64, sw_cvtepi32_epi64, __m128i, a, 0)
+
+// PMOVZX
+
+#undef _mm_cvtepu8_epi16
+#undef _mm_cvtepu8_epi32
+#undef _mm_cvtepu8_epi64
+#undef _mm_cvtepu16_epi32
+#undef _mm_cvtepu16_epi64
+#undef _mm_cvtepu32_epi64
+
+__forceinline
+__n128 sw_cvtepu8_epi16(__n128 a)
+{
+    return vmovl_u8(vget_low_u8(a));
+}
+
+__forceinline
+__n128 sw_cvtepu8_epi32(__n128 a)
+{
+    const uint16x8_t Widened16 = vmovl_u8(vget_low_u8(a));
+
+    return vmovl_u16(vget_low_u16(Widened16));
+}
+
+__forceinline
+__n128 sw_cvtepu8_epi64(__n128 a)
+{
+    const uint16x8_t Widened16 = vmovl_u8(vget_low_u8(a));
+    const uint32x4_t Widened32 = vmovl_u16(vget_low_u16(Widened16));
+
+    return vmovl_u32(vget_low_u32(Widened32));
+}
+
+__forceinline
+__n128 sw_cvtepu16_epi32(__n128 a)
+{
+    return vmovl_u16(vget_low_u16(a));
+}
+
+__forceinline
+__n128 sw_cvtepu16_epi64(__n128 a)
+{
+    const uint32x4_t Widened32 = vmovl_u16(vget_low_u16(a));
+
+    return vmovl_u32(vget_low_u32(Widened32));
+}
+
+__forceinline
+__n128 sw_cvtepu32_epi64(__n128 a)
+{
+    return vmovl_u32(vget_low_u32(a));
+}
+
+DEFINE_N128_OP_N128(__m128i, cvtepu8_epi16,  sw_cvtepu8_epi16,  __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepu8_epi32,  sw_cvtepu8_epi32,  __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepu8_epi64,  sw_cvtepu8_epi64,  __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepu16_epi32, sw_cvtepu16_epi32, __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepu16_epi64, sw_cvtepu16_epi64, __m128i, a, 0)
+DEFINE_N128_OP_N128(__m128i, cvtepu32_epi64, sw_cvtepu32_epi64, __m128i, a, 0)
 
 // PADDS PADDUS
 
