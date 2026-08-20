@@ -8,11 +8,11 @@
 @rem legacy ARM64EC build using stock SSE-only soft intrinsics from the Windows SDK
 cl -FAsc -Zi -O2 -I../dvec_demo -I.. -arm64EC                             -Tc test-intrins.c -link -debug -release -incremental:no -out:test-intrins-aec-sse4.exe
 
-@rem enhanced ARM64EC build overlaying new SSE/AVX soft intrinsics
+@rem enhanced ARM64EC build overlaying new SSE/AVX soft intrinsics (build a C)
 cl -FAsc -Zi -O2 -I../dvec_demo -I.. -arm64EC -FI../use_soft_intrinsics.h -Tc test-intrins.c -link -debug -release -incremental:no -out:test-intrins-eec-avx2.exe
 
-@rem enhanced native ARM64 build overlaying new SSE/AVX soft intrinsics
-cl -FAsc -Zi -O2 -I../dvec_demo -I..          -FI../use_soft_intrinsics.h -Tc test-intrins.c -link -debug -release -incremental:no -out:test-intrins-a64-avx2.exe
+@rem enhanced native ARM64 build overlaying new SSE/AVX soft intrinsics (build as C++)
+cl -FAsc -Zi -O2 -I../dvec_demo -I..          -FI../use_soft_intrinsics.h -Tp test-intrins.c -link -debug -release -incremental:no -out:test-intrins-a64-avx2.exe
 
 @rem Run both the correctness tests and micro-benchmarks (requires Windows on ARM, or Wine on aarch64)
 @rem Optionally define LOADER with a debugger command line (e.g. "cdb -o -g -G") or TTD command line (e.g. "sudo ttd")

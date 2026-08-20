@@ -293,13 +293,24 @@ __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ #
 // This workaround using volatile temporarily works around the bugs.  The bug does not occur with -Od or -O1 but lowering the
 // optimization level is not acceptable for micro-benchmarking purposes!
 
+#if AVX2_WORKAROUND
+
 #define DEFINE_TEST_OP_RAB(op, type_ret, type_a, type_b) \
 __forceinline void __cdecl test ## op         (unsigned index) { \
-    if (AVX2_WORKAROUND && (sizeof(type_a) == 32) && (sizeof(type_b) == 16)) \
+    if ((sizeof(type_a) == 32) && (sizeof(type_b) == 16)) \
        { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a, *(volatile type_b *)&Vsrc[index + 1]._ ## type_b ); } \
     else \
        { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a, Vsrc[index + 1]._ ## type_b ); } \
 }
+
+#else
+
+#define DEFINE_TEST_OP_RAB(op, type_ret, type_a, type_b) \
+__forceinline void __cdecl test ## op         (unsigned index) { \
+    Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a, Vsrc[index + 1]._ ## type_b ); \
+}
+
+#endif
 
 #define DEFINE_TEST_OP_RABC(op, type_ret, type_a, type_b, type_c) \
 __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a, Vsrc[index + 1]._ ## type_b, Vsrc[index + 2]._ ## type_c ); }
