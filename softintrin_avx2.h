@@ -2782,6 +2782,10 @@ __m128 _mm256_cvtpd_ps(__m256d a)
 
 // VPSLL VPSRL VPSRA
 
+#if 0
+
+// slower reference alternative
+
 __forceinline
 __n256i _nn256_sw_sli_si256(__n256i a, const int imm8)
 {
@@ -2798,16 +2802,28 @@ __n256i _nn256_sw_sli_si256(__n256i a, const int imm8)
     return T;
 }
 
+#endif
+
 __forceinline
 __n256i _nn256_slli_si256(__n256i a, const int imm8)
 {
-    return _nn256_sw_sli_si256(a, -imm8);
+    __n256 T;
+
+    T.val[0] = sw_slli_si128(a.val[0], imm8);
+    T.val[1] = sw_slli_si128(a.val[1], imm8);
+
+    return T;
 }
 
 __forceinline
 __n256i _nn256_srli_si256(__n256i a, const int imm8)
 {
-    return _nn256_sw_sli_si256(a, +imm8);
+    __n256 T;
+
+    T.val[0] = sw_srli_si128(a.val[0], imm8);
+    T.val[1] = sw_srli_si128(a.val[1], imm8);
+
+    return T;
 }
 
 __forceinline
