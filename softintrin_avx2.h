@@ -1398,7 +1398,8 @@ __n128 _nn_sqrt_sd(__n128 a, __n128 b) // not like the others!
     // SQRT(b) gets merged in to lower lane of a
 
     __n128 T = neon_fsqrtq64(b);
-    T = _nn_postprocess(T, b, a /* unused */, _IF_SQRT_F64 | _IF_SCALAR_INSERT_F64); \
+    T = _nn_postprocess(T, b, b, _IF_SQRT_F64);
+    T = _nn_postprocess(T, a, a, _IF_SCALAR_INSERT_F64);
 
     return T;
 }
@@ -1409,7 +1410,7 @@ __n128 _nn_sqrt_ss(__n128 a)
     // SQRT(a) gets merged in to lower lane of a
 
     __n128 T = neon_fsqrtq32(a);
-    T = _nn_postprocess(T, a, a, _IF_SQRT_F32 | _IF_SCALAR_INSERT_F32); \
+    T = _nn_postprocess(T, a, a, _IF_SQRT_F32 | _IF_SCALAR_INSERT_F32);
 
     return T;
 }
