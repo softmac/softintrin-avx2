@@ -279,6 +279,194 @@ DEFINE_TEST_OP_R   (_mm_setzero_pd,         __m128d)
 DEFINE_TEST_OP_R   (_mm_setzero_ps,         __m128)
 DEFINE_TEST_OP_R   (_mm_setzero_si128,      __m128i)
 
+#define SET_I8_0   0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8
+#define SET_I8_1   127, -128, 0, 64, -64, 32, -32, 16, -16, 8, -8, 4, -4, 2, -2, 1
+#define SET_I8_2   -11, 22, 0, -33, 44, -55, 66, -77, 88, -99, 110, -121, 12, -23, 34, -45
+#define SET_I8_3   0, -127, 126, -125, 124, -123, 122, -121, 120, -119, 118, -117, 116, -115, 114, -113
+
+#define SET_I16_0  0, 1, -1, 2, -2, 3, -3, 4
+#define SET_I16_1  32767, -32768, 0, 16384, -16384, 8192, -8192, 1
+#define SET_I16_2  -1234, 2345, 0, -3456, 4567, -5678, 6789, -7890
+#define SET_I16_3  0, -30000, 29000, -28000, 27000, -26000, 25000, -24000
+
+#define SET_I32_0  0, 1, -1, 2
+#define SET_I32_1  2147483647, (-2147483647 - 1), 0, 1073741824
+#define SET_I32_2  -123456789, 234567890, 0, -345678901
+#define SET_I32_3  0, -2000000000, 1900000000, -1800000000
+
+#define SET_I64_0  0LL, 1LL
+#define SET_I64_1  -1LL, 0x7FFFFFFFFFFFFFFFLL
+#define SET_I64_2  -123456789012345LL, 234567890123456LL
+#define SET_I64_3  0LL, -345678901234567LL
+
+#define SET_M64_0  literal_m64(0LL), literal_m64(1LL)
+#define SET_M64_1  literal_m64(-1LL), literal_m64(0x7FFFFFFFFFFFFFFFLL)
+#define SET_M64_2  literal_m64(-123456789012345LL), literal_m64(234567890123456LL)
+#define SET_M64_3  literal_m64(0LL), literal_m64(-345678901234567LL)
+
+#define SET_F32_0  0.0f, 1.0f, -1.0f, 2.5f
+#define SET_F32_1  -0.0f, -2.5f, 0.0f, 3.25f
+#define SET_F32_2  65536.0f, -65536.0f, 0.0f, 0.5f
+#define SET_F32_3  -123.75f, 0.0f, 456.5f, -0.25f
+
+#define SET_F64_0  0.0, 1.0
+#define SET_F64_1  -1.0, 0.0
+#define SET_F64_2  65536.5, -65536.25
+#define SET_F64_3  -123456.75, 0.5
+
+DEFINE_TEST_OP_RT  (_mm_set_epi8,           __m128i,    0, SET_I8_0)
+DEFINE_TEST_OP_RT  (_mm_set_epi8,           __m128i,    1, SET_I8_1)
+DEFINE_TEST_OP_RT  (_mm_set_epi8,           __m128i,    2, SET_I8_2)
+DEFINE_TEST_OP_RT  (_mm_set_epi8,           __m128i,    3, SET_I8_3)
+
+DEFINE_TEST_OP_RT  (_mm_set_epi16,          __m128i,    0, SET_I16_0)
+DEFINE_TEST_OP_RT  (_mm_set_epi16,          __m128i,    1, SET_I16_1)
+DEFINE_TEST_OP_RT  (_mm_set_epi16,          __m128i,    2, SET_I16_2)
+DEFINE_TEST_OP_RT  (_mm_set_epi16,          __m128i,    3, SET_I16_3)
+
+DEFINE_TEST_OP_RT  (_mm_set_epi32,          __m128i,    0, SET_I32_0)
+DEFINE_TEST_OP_RT  (_mm_set_epi32,          __m128i,    1, SET_I32_1)
+DEFINE_TEST_OP_RT  (_mm_set_epi32,          __m128i,    2, SET_I32_2)
+DEFINE_TEST_OP_RT  (_mm_set_epi32,          __m128i,    3, SET_I32_3)
+
+#if defined(_M_IX86) || defined(USE_SOFT_INTRINSICS)
+DEFINE_TEST_OP_RT  (_mm_set_epi64,          __m128i,    0, SET_M64_0)
+DEFINE_TEST_OP_RT  (_mm_set_epi64,          __m128i,    1, SET_M64_1)
+DEFINE_TEST_OP_RT  (_mm_set_epi64,          __m128i,    2, SET_M64_2)
+DEFINE_TEST_OP_RT  (_mm_set_epi64,          __m128i,    3, SET_M64_3)
+#endif
+
+DEFINE_TEST_OP_RT  (_mm_set_epi64x,         __m128i,    0, SET_I64_0)
+DEFINE_TEST_OP_RT  (_mm_set_epi64x,         __m128i,    1, SET_I64_1)
+DEFINE_TEST_OP_RT  (_mm_set_epi64x,         __m128i,    2, SET_I64_2)
+DEFINE_TEST_OP_RT  (_mm_set_epi64x,         __m128i,    3, SET_I64_3)
+
+DEFINE_TEST_OP_RT  (_mm_set_pd,             __m128d,    0, SET_F64_0)
+DEFINE_TEST_OP_RT  (_mm_set_pd,             __m128d,    1, SET_F64_1)
+DEFINE_TEST_OP_RT  (_mm_set_pd,             __m128d,    2, SET_F64_2)
+DEFINE_TEST_OP_RT  (_mm_set_pd,             __m128d,    3, SET_F64_3)
+
+DEFINE_TEST_OP_RV  (_mm_set_pd1,            __m128d,    0, 0.0)
+DEFINE_TEST_OP_RV  (_mm_set_pd1,            __m128d,    1, 1.25)
+DEFINE_TEST_OP_RV  (_mm_set_pd1,            __m128d,    2, -2.5)
+DEFINE_TEST_OP_RV  (_mm_set_pd1,            __m128d,    3, -0.0)
+
+DEFINE_TEST_OP_RT  (_mm_set_ps,             __m128,     0, SET_F32_0)
+DEFINE_TEST_OP_RT  (_mm_set_ps,             __m128,     1, SET_F32_1)
+DEFINE_TEST_OP_RT  (_mm_set_ps,             __m128,     2, SET_F32_2)
+DEFINE_TEST_OP_RT  (_mm_set_ps,             __m128,     3, SET_F32_3)
+
+DEFINE_TEST_OP_RV  (_mm_set_ps1,            __m128,     0, 0.0f)
+DEFINE_TEST_OP_RV  (_mm_set_ps1,            __m128,     1, 1.25f)
+DEFINE_TEST_OP_RV  (_mm_set_ps1,            __m128,     2, -2.5f)
+DEFINE_TEST_OP_RV  (_mm_set_ps1,            __m128,     3, -0.0f)
+
+DEFINE_TEST_OP_RV  (_mm_set_sd,             __m128d,    0, 0.0)
+DEFINE_TEST_OP_RV  (_mm_set_sd,             __m128d,    1, 1.25)
+DEFINE_TEST_OP_RV  (_mm_set_sd,             __m128d,    2, -2.5)
+DEFINE_TEST_OP_RV  (_mm_set_sd,             __m128d,    3, -0.0)
+
+DEFINE_TEST_OP_RV  (_mm_set_ss,             __m128,     0, 0.0f)
+DEFINE_TEST_OP_RV  (_mm_set_ss,             __m128,     1, 1.25f)
+DEFINE_TEST_OP_RV  (_mm_set_ss,             __m128,     2, -2.5f)
+DEFINE_TEST_OP_RV  (_mm_set_ss,             __m128,     3, -0.0f)
+
+DEFINE_TEST_OP_RV  (_mm_set1_epi8,          __m128i,    0, 0)
+DEFINE_TEST_OP_RV  (_mm_set1_epi8,          __m128i,    1, 127)
+DEFINE_TEST_OP_RV  (_mm_set1_epi8,          __m128i,    2, -1)
+DEFINE_TEST_OP_RV  (_mm_set1_epi8,          __m128i,    3, -128)
+
+DEFINE_TEST_OP_RV  (_mm_set1_epi16,         __m128i,    0, 0)
+DEFINE_TEST_OP_RV  (_mm_set1_epi16,         __m128i,    1, 32767)
+DEFINE_TEST_OP_RV  (_mm_set1_epi16,         __m128i,    2, -1)
+DEFINE_TEST_OP_RV  (_mm_set1_epi16,         __m128i,    3, -32768)
+
+DEFINE_TEST_OP_RV  (_mm_set1_epi32,         __m128i,    0, 0)
+DEFINE_TEST_OP_RV  (_mm_set1_epi32,         __m128i,    1, 2147483647)
+DEFINE_TEST_OP_RV  (_mm_set1_epi32,         __m128i,    2, -1)
+DEFINE_TEST_OP_RV  (_mm_set1_epi32,         __m128i,    3, (-2147483647 - 1))
+
+DEFINE_TEST_OP_RV  (_mm_set1_epi64x,        __m128i,    0, 0LL)
+DEFINE_TEST_OP_RV  (_mm_set1_epi64x,        __m128i,    1, 0x7FFFFFFFFFFFFFFFLL)
+DEFINE_TEST_OP_RV  (_mm_set1_epi64x,        __m128i,    2, -1LL)
+DEFINE_TEST_OP_RV  (_mm_set1_epi64x,        __m128i,    3, -123456789012345LL)
+
+DEFINE_TEST_OP_RV  (_mm_set1_pd,            __m128d,    0, 0.0)
+DEFINE_TEST_OP_RV  (_mm_set1_pd,            __m128d,    1, 1.25)
+DEFINE_TEST_OP_RV  (_mm_set1_pd,            __m128d,    2, -2.5)
+DEFINE_TEST_OP_RV  (_mm_set1_pd,            __m128d,    3, -0.0)
+
+DEFINE_TEST_OP_RV  (_mm_set1_ps,            __m128,     0, 0.0f)
+DEFINE_TEST_OP_RV  (_mm_set1_ps,            __m128,     1, 1.25f)
+DEFINE_TEST_OP_RV  (_mm_set1_ps,            __m128,     2, -2.5f)
+DEFINE_TEST_OP_RV  (_mm_set1_ps,            __m128,     3, -0.0f)
+
+DEFINE_TEST_OP_RT  (_mm_setr_epi8,          __m128i,    0, SET_I8_0)
+DEFINE_TEST_OP_RT  (_mm_setr_epi8,          __m128i,    1, SET_I8_1)
+DEFINE_TEST_OP_RT  (_mm_setr_epi8,          __m128i,    2, SET_I8_2)
+DEFINE_TEST_OP_RT  (_mm_setr_epi8,          __m128i,    3, SET_I8_3)
+
+DEFINE_TEST_OP_RT  (_mm_setr_epi16,         __m128i,    0, SET_I16_0)
+DEFINE_TEST_OP_RT  (_mm_setr_epi16,         __m128i,    1, SET_I16_1)
+DEFINE_TEST_OP_RT  (_mm_setr_epi16,         __m128i,    2, SET_I16_2)
+DEFINE_TEST_OP_RT  (_mm_setr_epi16,         __m128i,    3, SET_I16_3)
+
+DEFINE_TEST_OP_RT  (_mm_setr_epi32,         __m128i,    0, SET_I32_0)
+DEFINE_TEST_OP_RT  (_mm_setr_epi32,         __m128i,    1, SET_I32_1)
+DEFINE_TEST_OP_RT  (_mm_setr_epi32,         __m128i,    2, SET_I32_2)
+DEFINE_TEST_OP_RT  (_mm_setr_epi32,         __m128i,    3, SET_I32_3)
+
+#if defined(_M_IX86) || defined(USE_SOFT_INTRINSICS)
+DEFINE_TEST_OP_RT  (_mm_setr_epi64,         __m128i,    0, SET_M64_0)
+DEFINE_TEST_OP_RT  (_mm_setr_epi64,         __m128i,    1, SET_M64_1)
+DEFINE_TEST_OP_RT  (_mm_setr_epi64,         __m128i,    2, SET_M64_2)
+DEFINE_TEST_OP_RT  (_mm_setr_epi64,         __m128i,    3, SET_M64_3)
+#endif
+
+DEFINE_TEST_OP_RT  (_mm_setr_epi64x,        __m128i,    0, SET_I64_0)
+DEFINE_TEST_OP_RT  (_mm_setr_epi64x,        __m128i,    1, SET_I64_1)
+DEFINE_TEST_OP_RT  (_mm_setr_epi64x,        __m128i,    2, SET_I64_2)
+DEFINE_TEST_OP_RT  (_mm_setr_epi64x,        __m128i,    3, SET_I64_3)
+
+DEFINE_TEST_OP_RT  (_mm_setr_pd,            __m128d,    0, SET_F64_0)
+DEFINE_TEST_OP_RT  (_mm_setr_pd,            __m128d,    1, SET_F64_1)
+DEFINE_TEST_OP_RT  (_mm_setr_pd,            __m128d,    2, SET_F64_2)
+DEFINE_TEST_OP_RT  (_mm_setr_pd,            __m128d,    3, SET_F64_3)
+
+DEFINE_TEST_OP_RT  (_mm_setr_ps,            __m128,     0, SET_F32_0)
+DEFINE_TEST_OP_RT  (_mm_setr_ps,            __m128,     1, SET_F32_1)
+DEFINE_TEST_OP_RT  (_mm_setr_ps,            __m128,     2, SET_F32_2)
+DEFINE_TEST_OP_RT  (_mm_setr_ps,            __m128,     3, SET_F32_3)
+
+#undef SET_I8_0
+#undef SET_I8_1
+#undef SET_I8_2
+#undef SET_I8_3
+#undef SET_I16_0
+#undef SET_I16_1
+#undef SET_I16_2
+#undef SET_I16_3
+#undef SET_I32_0
+#undef SET_I32_1
+#undef SET_I32_2
+#undef SET_I32_3
+#undef SET_I64_0
+#undef SET_I64_1
+#undef SET_I64_2
+#undef SET_I64_3
+#undef SET_M64_0
+#undef SET_M64_1
+#undef SET_M64_2
+#undef SET_M64_3
+#undef SET_F32_0
+#undef SET_F32_1
+#undef SET_F32_2
+#undef SET_F32_3
+#undef SET_F64_0
+#undef SET_F64_1
+#undef SET_F64_2
+#undef SET_F64_3
+
 DEFINE_TEST_OP_R   (_mm_undefined_pd,       __m128d)
 DEFINE_TEST_OP_R   (_mm_undefined_ps,       __m128)
 DEFINE_TEST_OP_R   (_mm_undefined_si128,    __m128i)
@@ -547,6 +735,151 @@ DEFINE_TEST_OP_RABI(_mm256_shuffle_ps,      __m256,     __m256,     __m256,     
 DEFINE_TEST_OP_R   (_mm256_setzero_pd,      __m256d)
 DEFINE_TEST_OP_R   (_mm256_setzero_ps,      __m256)
 DEFINE_TEST_OP_R   (_mm256_setzero_si256,   __m256i)
+
+#define SET256_I8_0   0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8, 9, -9, 10, -10, 11, -11, 12, -12, 13, -13, 14, -14, 15, -15, 16
+#define SET256_I8_1   127, -128, 0, 64, -64, 32, -32, 16, -16, 8, -8, 4, -4, 2, -2, 1, -1, 126, -127, 63, -63, 31, -31, 15, -15, 7, -7, 3, -3, 1, -1, 0
+#define SET256_I8_2   -11, 22, 0, -33, 44, -55, 66, -77, 88, -99, 110, -121, 12, -23, 34, -45, 56, -67, 78, -89, 90, -101, 112, -123, 21, -32, 43, -54, 65, -76, 87, 0
+#define SET256_I8_3   0, -127, 126, -125, 124, -123, 122, -121, 120, -119, 118, -117, 116, -115, 114, -113, 112, -111, 110, -109, 108, -107, 106, -105, 104, -103, 102, -101, 100, -99, 98, -97
+
+#define SET256_I16_0  0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8
+#define SET256_I16_1  32767, -32768, 0, 16384, -16384, 8192, -8192, 4096, -4096, 2048, -2048, 1024, -1024, 512, -512, 1
+#define SET256_I16_2  -1234, 2345, 0, -3456, 4567, -5678, 6789, -7890, 8901, -9012, 10123, -11234, 12345, -13456, 14567, 0
+#define SET256_I16_3  0, -30000, 29000, -28000, 27000, -26000, 25000, -24000, 23000, -22000, 21000, -20000, 19000, -18000, 17000, -16000
+
+#define SET256_I32_0  0, 1, -1, 2, -2, 3, -3, 4
+#define SET256_I32_1  2147483647, (-2147483647 - 1), 0, 1073741824, -1073741824, 536870912, -536870912, 1
+#define SET256_I32_2  -123456789, 234567890, 0, -345678901, 456789012, -567890123, 678901234, -789012345
+#define SET256_I32_3  0, -2000000000, 1900000000, -1800000000, 1700000000, -1600000000, 1500000000, -1400000000
+
+#define SET256_I64_0  0LL, 1LL, -1LL, 2LL
+#define SET256_I64_1  0x7FFFFFFFFFFFFFFFLL, -1LL, 0LL, 0x4000000000000000LL
+#define SET256_I64_2  -123456789012345LL, 234567890123456LL, 0LL, -345678901234567LL
+#define SET256_I64_3  0LL, -4000000000000000000LL, 3000000000000000000LL, -2000000000000000000LL
+
+#define SET256_F32_0  0.0f, 1.0f, -1.0f, 2.5f, -2.5f, 3.25f, -3.25f, 4.5f
+#define SET256_F32_1  -0.0f, -2.5f, 0.0f, 3.25f, -4.5f, 5.75f, -6.0f, 7.125f
+#define SET256_F32_2  65536.0f, -65536.0f, 0.0f, 0.5f, -0.5f, 1024.25f, -2048.5f, 4096.75f
+#define SET256_F32_3  -123.75f, 0.0f, 456.5f, -0.25f, 789.125f, -1011.5f, 1213.75f, -1415.0f
+
+#define SET256_F64_0  0.0, 1.0, -1.0, 2.5
+#define SET256_F64_1  -0.0, -2.5, 0.0, 3.25
+#define SET256_F64_2  65536.5, -65536.25, 0.0, 0.5
+#define SET256_F64_3  -123456.75, 0.5, 234567.25, -345678.125
+
+DEFINE_TEST_OP_RT  (_mm256_set_epi8,        __m256i,    0, SET256_I8_0)
+DEFINE_TEST_OP_RT  (_mm256_set_epi8,        __m256i,    1, SET256_I8_1)
+DEFINE_TEST_OP_RT  (_mm256_set_epi8,        __m256i,    2, SET256_I8_2)
+DEFINE_TEST_OP_RT  (_mm256_set_epi8,        __m256i,    3, SET256_I8_3)
+
+DEFINE_TEST_OP_RT  (_mm256_set_epi16,       __m256i,    0, SET256_I16_0)
+DEFINE_TEST_OP_RT  (_mm256_set_epi16,       __m256i,    1, SET256_I16_1)
+DEFINE_TEST_OP_RT  (_mm256_set_epi16,       __m256i,    2, SET256_I16_2)
+DEFINE_TEST_OP_RT  (_mm256_set_epi16,       __m256i,    3, SET256_I16_3)
+
+DEFINE_TEST_OP_RT  (_mm256_set_epi32,       __m256i,    0, SET256_I32_0)
+DEFINE_TEST_OP_RT  (_mm256_set_epi32,       __m256i,    1, SET256_I32_1)
+DEFINE_TEST_OP_RT  (_mm256_set_epi32,       __m256i,    2, SET256_I32_2)
+DEFINE_TEST_OP_RT  (_mm256_set_epi32,       __m256i,    3, SET256_I32_3)
+
+DEFINE_TEST_OP_RT  (_mm256_set_epi64x,      __m256i,    0, SET256_I64_0)
+DEFINE_TEST_OP_RT  (_mm256_set_epi64x,      __m256i,    1, SET256_I64_1)
+DEFINE_TEST_OP_RT  (_mm256_set_epi64x,      __m256i,    2, SET256_I64_2)
+DEFINE_TEST_OP_RT  (_mm256_set_epi64x,      __m256i,    3, SET256_I64_3)
+
+DEFINE_TEST_OP_RT  (_mm256_set_pd,          __m256d,    0, SET256_F64_0)
+DEFINE_TEST_OP_RT  (_mm256_set_pd,          __m256d,    1, SET256_F64_1)
+DEFINE_TEST_OP_RT  (_mm256_set_pd,          __m256d,    2, SET256_F64_2)
+DEFINE_TEST_OP_RT  (_mm256_set_pd,          __m256d,    3, SET256_F64_3)
+
+DEFINE_TEST_OP_RT  (_mm256_set_ps,          __m256,     0, SET256_F32_0)
+DEFINE_TEST_OP_RT  (_mm256_set_ps,          __m256,     1, SET256_F32_1)
+DEFINE_TEST_OP_RT  (_mm256_set_ps,          __m256,     2, SET256_F32_2)
+DEFINE_TEST_OP_RT  (_mm256_set_ps,          __m256,     3, SET256_F32_3)
+
+DEFINE_TEST_OP_RV  (_mm256_set1_epi8,       __m256i,    0, 0)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi8,       __m256i,    1, 127)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi8,       __m256i,    2, -1)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi8,       __m256i,    3, -128)
+
+DEFINE_TEST_OP_RV  (_mm256_set1_epi16,      __m256i,    0, 0)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi16,      __m256i,    1, 32767)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi16,      __m256i,    2, -1)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi16,      __m256i,    3, -32768)
+
+DEFINE_TEST_OP_RV  (_mm256_set1_epi32,      __m256i,    0, 0)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi32,      __m256i,    1, 2147483647)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi32,      __m256i,    2, -1)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi32,      __m256i,    3, (-2147483647 - 1))
+
+DEFINE_TEST_OP_RV  (_mm256_set1_epi64x,     __m256i,    0, 0LL)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi64x,     __m256i,    1, 0x7FFFFFFFFFFFFFFFLL)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi64x,     __m256i,    2, -1LL)
+DEFINE_TEST_OP_RV  (_mm256_set1_epi64x,     __m256i,    3, -123456789012345LL)
+
+DEFINE_TEST_OP_RV  (_mm256_set1_pd,         __m256d,    0, 0.0)
+DEFINE_TEST_OP_RV  (_mm256_set1_pd,         __m256d,    1, 1.25)
+DEFINE_TEST_OP_RV  (_mm256_set1_pd,         __m256d,    2, -2.5)
+DEFINE_TEST_OP_RV  (_mm256_set1_pd,         __m256d,    3, -0.0)
+
+DEFINE_TEST_OP_RV  (_mm256_set1_ps,         __m256,     0, 0.0f)
+DEFINE_TEST_OP_RV  (_mm256_set1_ps,         __m256,     1, 1.25f)
+DEFINE_TEST_OP_RV  (_mm256_set1_ps,         __m256,     2, -2.5f)
+DEFINE_TEST_OP_RV  (_mm256_set1_ps,         __m256,     3, -0.0f)
+
+DEFINE_TEST_OP_RT  (_mm256_setr_epi8,       __m256i,    0, SET256_I8_0)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi8,       __m256i,    1, SET256_I8_1)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi8,       __m256i,    2, SET256_I8_2)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi8,       __m256i,    3, SET256_I8_3)
+
+DEFINE_TEST_OP_RT  (_mm256_setr_epi16,      __m256i,    0, SET256_I16_0)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi16,      __m256i,    1, SET256_I16_1)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi16,      __m256i,    2, SET256_I16_2)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi16,      __m256i,    3, SET256_I16_3)
+
+DEFINE_TEST_OP_RT  (_mm256_setr_epi32,      __m256i,    0, SET256_I32_0)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi32,      __m256i,    1, SET256_I32_1)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi32,      __m256i,    2, SET256_I32_2)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi32,      __m256i,    3, SET256_I32_3)
+
+DEFINE_TEST_OP_RT  (_mm256_setr_epi64x,     __m256i,    0, SET256_I64_0)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi64x,     __m256i,    1, SET256_I64_1)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi64x,     __m256i,    2, SET256_I64_2)
+DEFINE_TEST_OP_RT  (_mm256_setr_epi64x,     __m256i,    3, SET256_I64_3)
+
+DEFINE_TEST_OP_RT  (_mm256_setr_pd,         __m256d,    0, SET256_F64_0)
+DEFINE_TEST_OP_RT  (_mm256_setr_pd,         __m256d,    1, SET256_F64_1)
+DEFINE_TEST_OP_RT  (_mm256_setr_pd,         __m256d,    2, SET256_F64_2)
+DEFINE_TEST_OP_RT  (_mm256_setr_pd,         __m256d,    3, SET256_F64_3)
+
+DEFINE_TEST_OP_RT  (_mm256_setr_ps,         __m256,     0, SET256_F32_0)
+DEFINE_TEST_OP_RT  (_mm256_setr_ps,         __m256,     1, SET256_F32_1)
+DEFINE_TEST_OP_RT  (_mm256_setr_ps,         __m256,     2, SET256_F32_2)
+DEFINE_TEST_OP_RT  (_mm256_setr_ps,         __m256,     3, SET256_F32_3)
+
+#undef SET256_I8_0
+#undef SET256_I8_1
+#undef SET256_I8_2
+#undef SET256_I8_3
+#undef SET256_I16_0
+#undef SET256_I16_1
+#undef SET256_I16_2
+#undef SET256_I16_3
+#undef SET256_I32_0
+#undef SET256_I32_1
+#undef SET256_I32_2
+#undef SET256_I32_3
+#undef SET256_I64_0
+#undef SET256_I64_1
+#undef SET256_I64_2
+#undef SET256_I64_3
+#undef SET256_F32_0
+#undef SET256_F32_1
+#undef SET256_F32_2
+#undef SET256_F32_3
+#undef SET256_F64_0
+#undef SET256_F64_1
+#undef SET256_F64_2
+#undef SET256_F64_3
 
 DEFINE_TEST_OP_VAB (_mm256_store_pd,                    pdouble,    __m256d)
 DEFINE_TEST_OP_VAB (_mm256_store_ps,                    pfloat,     __m256)

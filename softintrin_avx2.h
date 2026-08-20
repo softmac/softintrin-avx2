@@ -2071,6 +2071,58 @@ __m256 _mm256_set1_ps(float _F0)
 }
 
 __forceinline
+__m256i _mm256_set_epi8(char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24,
+                        char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16,
+                        char e15, char e14, char e13, char e12, char e11, char e10, char e9,  char e8,
+                        char e7,  char e6,  char e5,  char e4,  char e3,  char e2,  char e1,  char e0)
+{
+    __m256i T;
+
+    *(__m128i *)&T.m256i_u64[0] = _mm_set_epi8(e15, e14, e13, e12, e11, e10, e9,  e8,
+                                                e7,  e6,  e5,  e4,  e3,  e2,  e1,  e0);
+    *(__m128i *)&T.m256i_u64[2] = _mm_set_epi8(e31, e30, e29, e28, e27, e26, e25, e24,
+                                                e23, e22, e21, e20, e19, e18, e17, e16);
+
+    return T;
+}
+
+__forceinline
+__m256i _mm256_set1_epi8(const char a)
+{
+    __m256i T;
+    __m128i Half = _mm_set1_epi8(a);
+
+    *(__m128i *)&T.m256i_u64[0] = Half;
+    *(__m128i *)&T.m256i_u64[2] = Half;
+
+    return T;
+}
+
+__forceinline
+__m256i _mm256_set_epi16(short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8,
+                         short e7,  short e6,  short e5,  short e4,  short e3,  short e2,  short e1, short e0)
+{
+    __m256i T;
+
+    *(__m128i *)&T.m256i_u64[0] = _mm_set_epi16(e7, e6, e5, e4, e3, e2, e1, e0);
+    *(__m128i *)&T.m256i_u64[2] = _mm_set_epi16(e15, e14, e13, e12, e11, e10, e9, e8);
+
+    return T;
+}
+
+__forceinline
+__m256i _mm256_set1_epi16(const short a)
+{
+    __m256i T;
+    __m128i Half = _mm_set1_epi16(a);
+
+    *(__m128i *)&T.m256i_u64[0] = Half;
+    *(__m128i *)&T.m256i_u64[2] = Half;
+
+    return T;
+}
+
+__forceinline
 __m256i _mm256_set_epi32(int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0)
 {
     __m256i T;
@@ -2094,10 +2146,69 @@ __m256i _mm256_set1_epi32(const int a)
 }
 
 __forceinline
+__m256i _mm256_set_epi64x(__int64 e3, __int64 e2, __int64 e1, __int64 e0)
+{
+    __m256i T;
+
+    T.m256i_i64[0] = e0;
+    T.m256i_i64[1] = e1;
+    T.m256i_i64[2] = e2;
+    T.m256i_i64[3] = e3;
+
+    return T;
+}
+
+__forceinline
+__m256i _mm256_set1_epi64x(const __int64 a)
+{
+    return _mm256_set_epi64x(a, a, a, a);
+}
+
+__forceinline
 __m256i _mm256_setzero_si256(void)
 {
-    __m256i T = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    return T;
+    return _mm256_set_epi64x(0, 0, 0, 0);
+}
+
+__forceinline
+__m256i _mm256_setr_epi8(char e0,  char e1,  char e2,  char e3,  char e4,  char e5,  char e6,  char e7,
+                         char e8,  char e9,  char e10, char e11, char e12, char e13, char e14, char e15,
+                         char e16, char e17, char e18, char e19, char e20, char e21, char e22, char e23,
+                         char e24, char e25, char e26, char e27, char e28, char e29, char e30, char e31)
+{
+    return _mm256_set_epi8(e31, e30, e29, e28, e27, e26, e25, e24, e23, e22, e21, e20, e19, e18, e17, e16,
+                           e15, e14, e13, e12, e11, e10, e9,  e8,  e7,  e6,  e5,  e4,  e3,  e2,  e1,  e0);
+}
+
+__forceinline
+__m256i _mm256_setr_epi16(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7,
+                          short e8, short e9, short e10, short e11, short e12, short e13, short e14, short e15)
+{
+    return _mm256_set_epi16(e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
+}
+
+__forceinline
+__m256i _mm256_setr_epi32(int e0, int e1, int e2, int e3, int e4, int e5, int e6, int e7)
+{
+    return _mm256_set_epi32(e7, e6, e5, e4, e3, e2, e1, e0);
+}
+
+__forceinline
+__m256i _mm256_setr_epi64x(__int64 e0, __int64 e1, __int64 e2, __int64 e3)
+{
+    return _mm256_set_epi64x(e3, e2, e1, e0);
+}
+
+__forceinline
+__m256d _mm256_setr_pd(double _D0, double _D1, double _D2, double _D3)
+{
+    return _mm256_set_pd(_D3, _D2, _D1, _D0);
+}
+
+__forceinline
+__m256 _mm256_setr_ps(float _F0, float _F1, float _F2, float _F3, float _F4, float _F5, float _F6, float _F7)
+{
+    return _mm256_set_ps(_F7, _F6, _F5, _F4, _F3, _F2, _F1, _F0);
 }
 
 __forceinline

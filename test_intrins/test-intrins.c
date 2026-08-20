@@ -267,6 +267,15 @@ void dump_vecs(char *OpName)
 // Macros to define the test functions
 //
 
+__forceinline
+__m64 literal_m64(__int64 Value)
+{
+    __m64 T;
+
+    T.m64_i64 = Value;
+    return T;
+}
+
 #define DEFINE_TEST_OP_R(op, type_ret) \
 __forceinline void __cdecl test ## op         (unsigned index) { Vout[index]._ ## type_ret = op ( ); }
 
@@ -301,6 +310,18 @@ __forceinline void __cdecl test ## op ## imm8 (unsigned index) { Vout[index]._ #
 #define DEFINE_TEST_OP_RABI(op, type_ret, type_a, type_b, imm8) \
 __forceinline void __cdecl test ## op ## imm8 (unsigned index) { Vout[index]._ ## type_ret = op ( Vsrc[index + 0]._ ## type_a, Vsrc[index + 1]._ ## type_b, imm8 ); }
 
+#define DEFINE_TEST_OP_RV(op, type_ret, variant, ...) \
+__forceinline void __cdecl test ## op ## variant (unsigned index) { Vout[index]._ ## type_ret = op ( __VA_ARGS__ ); }
+
+#define DEFINE_TEST_OP_RT(op, type_ret, variant, values) \
+DEFINE_TEST_OP_RT_I(op, type_ret, variant, values)
+
+#define DEFINE_TEST_OP_RT_I(op, type_ret, variant, ...) \
+DEFINE_TEST_OP_RT_II(op, type_ret, variant, (__VA_ARGS__))
+
+#define DEFINE_TEST_OP_RT_II(op, type_ret, variant, values) \
+__forceinline void __cdecl test ## op ## variant (unsigned index) { Vout[index]._ ## type_ret = op values; }
+
 #define DEFINE_TEST_OP_VAB(op, type_a, type_b) \
 __forceinline void __cdecl test ## op         (unsigned index) {                             op ( Vsrc[index + 0]._ ## type_a, Vsrc[index + 1]._ ## type_b ); }
 
@@ -316,6 +337,10 @@ __forceinline void __cdecl test ## op         (unsigned index) {                
 #undef  DEFINE_TEST_OP_RABC
 #undef  DEFINE_TEST_OP_RAI
 #undef  DEFINE_TEST_OP_RABI
+#undef  DEFINE_TEST_OP_RV
+#undef  DEFINE_TEST_OP_RT
+#undef  DEFINE_TEST_OP_RT_I
+#undef  DEFINE_TEST_OP_RT_II
 #undef  DEFINE_TEST_OP_VAB
 
 #define EXECUTE_TEST_OP(op)         do { if (init_vecs(# op)) { do { for (unsigned i = 0; i < (NUM_BIGVECS - 2); i++) { test ## op (i);         } } while (Run()); dump_vecs(# op); } } while(0);
@@ -327,6 +352,10 @@ __forceinline void __cdecl test ## op         (unsigned index) {                
 #define DEFINE_TEST_OP_RABC(op, type_ret, type_a, type_b, type_c)  EXECUTE_TEST_OP  (op)
 #define DEFINE_TEST_OP_RAI( op, type_ret, type_a,         imm8)    EXECUTE_TEST_OP_I(op, imm8)
 #define DEFINE_TEST_OP_RABI(op, type_ret, type_a, type_b, imm8)    EXECUTE_TEST_OP_I(op, imm8)
+#define DEFINE_TEST_OP_RV(  op, type_ret, variant, ...)            do { if (init_vecs(# op)) { do { for (unsigned i = 0; i < (NUM_BIGVECS - 2); i++) { test ## op ## variant (i); } } while (Run()); dump_vecs(# op); } } while(0);
+#define DEFINE_TEST_OP_RT(  op, type_ret, variant, values)         DEFINE_TEST_OP_RT_I(op, type_ret, variant, values)
+#define DEFINE_TEST_OP_RT_I(op, type_ret, variant, ...)            DEFINE_TEST_OP_RT_II(op, type_ret, variant, (__VA_ARGS__))
+#define DEFINE_TEST_OP_RT_II(op, type_ret, variant, values)        EXECUTE_TEST_OP_I(op, variant)
 #define DEFINE_TEST_OP_VAB( op,           type_a, type_b)          EXECUTE_TEST_OP  (op)
 
 void RunTests(void)
