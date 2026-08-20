@@ -3296,6 +3296,9 @@ __m256d _mm256_cvtps_pd(__m128 a)
 
 // VCVTPD2DQ
 
+#if 0
+// slower reference alternative
+
 __forceinline
 __n128i _nn256_sw_cvtpd_epi32(__n256d a)
 {
@@ -3315,7 +3318,25 @@ __m128i _mm256_cvtpd_epi32(__m256d a)
     return _nn128_castn128_si128( _nn256_sw_cvtpd_epi32(_nn256_castpd_n256(a)) );
 }
 
+#else
+
+__forceinline
+__m128i _mm256_cvtpd_epi32(__m256d a)
+{
+    const __n256d Input = _nn256_castpd_n256(a);
+    const int32x4_t Low = _nn_fix_cvtpd_epi32(Input.val[0], vcvtnq_s64_f64(Input.val[0]));
+    const int32x4_t High = _nn_fix_cvtpd_epi32(Input.val[1], vcvtnq_s64_f64(Input.val[1]));
+    const int32x4_t Result = vcombine_s32(vget_low_s32(Low), vget_low_s32(High));
+
+    return _nn128_castn128_si128(Result);
+}
+
+#endif
+
 // VCVTTPD2DQ
+
+#if 0
+// slower reference alternative
 
 __forceinline
 __n128i _nn256_sw_cvttpd_epi32(__n256d a)
@@ -3335,6 +3356,21 @@ __m128i _mm256_cvttpd_epi32(__m256d a)
 {
     return _nn128_castn128_si128( _nn256_sw_cvttpd_epi32(_nn256_castpd_n256(a)) );
 }
+
+#else
+
+__forceinline
+__m128i _mm256_cvttpd_epi32(__m256d a)
+{
+    const __n256d Input = _nn256_castpd_n256(a);
+    const int32x4_t Low = _nn_fix_cvtpd_epi32(Input.val[0], vcvtq_s64_f64(Input.val[0]));
+    const int32x4_t High = _nn_fix_cvtpd_epi32(Input.val[1], vcvtq_s64_f64(Input.val[1]));
+    const int32x4_t Result = vcombine_s32(vget_low_s32(Low), vget_low_s32(High));
+
+    return _nn128_castn128_si128(Result);
+}
+
+#endif
 
 // VCVTPD2PS
 
