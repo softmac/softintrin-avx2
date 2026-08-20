@@ -1354,6 +1354,84 @@ __m128 _mm_dp_ps(__m128 a, __m128 b, const int imm8)
     return _nn128_castn128_ps(_nn_dp_ps(_nn128_castps_n128(a), _nn128_castps_n128(b), imm8));
 }
 
+// RCPPS RCPSS
+// RSQRTPS RSQRTSS
+
+#undef _mm_rcp_ps
+#undef _mm_rsqrt_ps
+#undef _mm_rcp_ss
+#undef _mm_rsqrt_ss
+
+// Reciprocal estimates with one Newton-Raphson refinement
+// LLVM implementation details: https://reviews.llvm.org/D26518
+// These generate bitwise more precise results than Intel Alder Lake
+
+__forceinline
+__n128 _nn_rcp_ps(__n128 a)
+{
+    const __n128 Estimate = vrecpeq_f32(a);
+    const __n128 Step = vrecpsq_f32(Estimate, a);
+
+    __n128 T = vmulq_f32(Estimate, Step);
+    T = _nn_postprocess(T, a, a, _IF_SQRT_F32);
+
+    return T;
+}
+
+__forceinline
+__m128 _mm_rcp_ps(__m128 a)
+{
+    return _nn128_castn128_ps( _nn_rcp_ps(_nn128_castps_n128(a)) );
+}
+
+__forceinline
+__n128 _nn_rsqrt_ps(__n128 a)
+{
+    const __n128 Estimate = vrsqrteq_f32(a);
+    __n128 T = vmulq_f32(Estimate, Estimate);
+
+    T = vrsqrtsq_f32(T, Estimate);
+    T = _nn_postprocess(T, a, a, _IF_SQRT_F32);
+
+    return T;
+}
+
+__forceinline
+__m128 _mm_rsqrt_ps(__m128 a)
+{
+    return _nn128_castn128_ps( _nn_rsqrt_ps(_nn128_castps_n128(a)) );
+}
+
+__forceinline
+__n128 _nn_rcp_ss(__n128 a)
+{
+    __n128 T = _nn_rcp_ps(a);
+    T = _nn_postprocess(T, a, a, _IF_SCALAR_INSERT_F32);
+
+    return T;
+}
+
+__forceinline
+__m128 _mm_rcp_ss(__m128 a)
+{
+    return _nn128_castn128_ps( _nn_rcp_ss(_nn128_castps_n128(a)) );
+}
+
+__forceinline
+__n128 _nn_rsqrt_ss(__n128 a)
+{
+    __n128 T = _nn_rsqrt_ps(a);
+    T = _nn_postprocess(T, a, a, _IF_SCALAR_INSERT_F32);
+
+    return T;
+}
+
+__forceinline
+__m128 _mm_rsqrt_ss(__m128 a)
+{
+    return _nn128_castn128_ps( _nn_rsqrt_ss(_nn128_castps_n128(a)) );
+}
+
 // SQRTPD SQRTSD
 // SQRTPS SQRTSS
 
