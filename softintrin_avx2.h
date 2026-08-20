@@ -635,6 +635,40 @@ DEFINE_N128_OP_N128_N128(__m128i, sub_epi16,    neon_subq16,    __m128i, a, __m1
 DEFINE_N128_OP_N128_N128(__m128i, sub_epi32,    neon_subq32,    __m128i, a, __m128i, b, 0)
 DEFINE_N128_OP_N128_N128(__m128i, sub_epi64,    neon_subq64,    __m128i, a, __m128i, b, 0)
 
+// PSADBW
+
+#undef _mm_sad_epu8
+
+__forceinline
+__n128 sw_sad_epu8(__n128 a, const __n128 b)
+{
+    const uint8x16_t AbsoluteDifferences = vabdq_u8(a, b);
+    const uint16x8_t PairSums = vpaddlq_u8(AbsoluteDifferences);
+    const uint32x4_t QuadSums = vpaddlq_u16(PairSums);
+    __n128 T = vpaddlq_u32(QuadSums);
+
+#if 0
+
+    // slower reference alternative
+
+    T.n128_u64[0] = 0;
+    T.n128_u64[1] = 0;
+
+    for (unsigned i = 0; i < 16; i++)
+    {
+        const uint8_t A = a.n128_u8[i];
+        const uint8_t B = b.n128_u8[i];
+
+        T.n128_u64[i >> 3] += (A >= B) ? (A - B) : (B - A);
+    }
+
+#endif
+
+    return T;
+}
+
+DEFINE_N128_OP_N128_N128(__m128i, sad_epu8, sw_sad_epu8, __m128i, a, __m128i, b, 0)
+
 // PMADDWD PMADDUBSW
 
 #undef _mm_madd_epi16
