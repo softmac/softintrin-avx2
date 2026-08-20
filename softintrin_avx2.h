@@ -166,6 +166,7 @@ __m128d _mm_set_pd(double _D1, double _D0)
 
 #undef _mm_setzero_epi32
 #undef _mm_setzero_epix64
+#undef _mm_setzero_si128
 #undef _mm_setzero_ps
 #undef _mm_setzero_pd
 
@@ -179,6 +180,12 @@ __forceinline
 __m128i _mm_setzero_epix64(void)
 {
     return _mm_set_epi64x(0, 0);
+}
+
+__forceinline
+__m128i _mm_setzero_si128(void)
+{
+    return _nn128_castn128_si128(neon_moviqw(0));
 }
 
 __forceinline
@@ -752,10 +759,17 @@ DEFINE_N128_OP_N128_N128(__m128i, maddubs_epi16,sw_maddubs_epi16, __m128i, a, __
 __forceinline
 __n128 sw_mulq_s32(__n128 a, const __n128 b)
 {
-    __n128 T;
+    const __n128 AEven = neon_uzp1_q32(a, a);
+    const __n128 BEven = neon_uzp1_q32(b, b);
+
+    __n128 T = vmull_s32(vget_low_s32(AEven), vget_low_s32(BEven));
+
+#if 0
+    // slower reference alternative
 
     T.n128_u64[0] = (__int64)a.n128_i32[0] * (__int64)b.n128_i32[0];
     T.n128_u64[1] = (__int64)a.n128_i32[2] * (__int64)b.n128_i32[2];
+#endif
 
     return T;
 }
@@ -763,10 +777,17 @@ __n128 sw_mulq_s32(__n128 a, const __n128 b)
 __forceinline
 __n128 sw_mulq_u32(__n128 a, const __n128 b)
 {
-    __n128 T;
+    const __n128 AEven = neon_uzp1_q32(a, a);
+    const __n128 BEven = neon_uzp1_q32(b, b);
+
+    __n128 T = vmull_u32(vget_low_u32(AEven), vget_low_u32(BEven));
+
+#if 0
+    // slower reference alternative
 
     T.n128_u64[0] = (unsigned __int64)a.n128_u32[0] * (unsigned __int64)b.n128_u32[0];
     T.n128_u64[1] = (unsigned __int64)a.n128_u32[2] * (unsigned __int64)b.n128_u32[2];
+#endif
 
     return T;
 }
@@ -2837,17 +2858,17 @@ __m128i _mm256_extracti128_si256(__m256i a, const int imm8)
 __forceinline
 __m256d _mm256_insertf128_pd(__m256d a, __m128d b, const int imm8)
 {
-    __m256d T = a;
-    *(__m128d *)&T.m256d_f64[(imm8 & 1) << 1] = b;
-    return T;
+    __n128x2 T = _nn256_castpd_n256(a);
+    T.val[imm8 & 1] = _nn128_castpd_n128(b);
+    return _nn256_castn256_pd(T);
 }
 
 __forceinline
 __m256 _mm256_insertf128_ps(__m256 a, __m128 b, const int imm8)
 {
-    __m256 T = a;
-    *(__m128 *)&T.m256_f32[(imm8 & 1) << 2] = b;
-    return T;
+    __n128x2 T = _nn256_castps_n256(a);
+    T.val[imm8 & 1] = _nn128_castps_n128(b);
+    return _nn256_castn256_ps(T);
 }
 
 // VINSERTI128
@@ -2855,9 +2876,9 @@ __m256 _mm256_insertf128_ps(__m256 a, __m128 b, const int imm8)
 __forceinline
 __m256i _mm256_inserti128_si256(__m256i a, __m128i b, const int imm8)
 {
-    __m256i T = a;
-    *(__m128i *)&T.m256i_u64[(imm8 & 1) << 1] = b;
-    return T;
+    __n128x2 T = _nn256_castsi256_n256(a);
+    T.val[imm8 & 1] = _nn128_castsi128_n128(b);
+    return _nn256_castn256_si256(T);
 }
 
 // VPERF2F128
@@ -3503,6 +3524,29 @@ DEFINE_M256_OP_M256_M256_IMM8(__m256d, __m128d, shuffle_pd,    __m256d, __m128d,
 DEFINE_M256_OP_M256_M256_IMM8(__m256 , __m128 , shuffle_ps,    __m256 , __m128 , __m256 , __m128 , 0)
 
 // PCLMUL uses different data types for SSE and AVX variants
+
+#undef _mm_clmulepi64_si128
+
+__forceinline
+__m128i _mm_clmulepi64_si128(__m128i a, __m128i b, const int imm8)
+{
+    const __n128 A = _nn128_castsi128_n128(a);
+    const __n128 B = _nn128_castsi128_n128(b);
+    const poly64x2_t AP = vreinterpretq_p64_u64(A);
+    const poly64x2_t BP = vreinterpretq_p64_u64(B);
+    __n128 T;
+
+    switch (imm8 & 0x11)
+    {
+    default:
+    case 0x00: T = vmull_p64(vget_low_p64(AP),  vget_low_p64(BP));  break;
+    case 0x01: T = vmull_p64(vget_high_p64(AP), vget_low_p64(BP));  break;
+    case 0x10: T = vmull_p64(vget_low_p64(AP),  vget_high_p64(BP)); break;
+    case 0x11: T = neon_pmull2_64(A, B);                           break;
+    }
+
+    return _nn128_castn128_si128(T);
+}
 
 #define _mm_clmulepi64_epi128  _mm_clmulepi64_si128
 

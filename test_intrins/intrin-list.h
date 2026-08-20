@@ -481,6 +481,8 @@ DEFINE_TEST_OP_RA  (_mm_aesimc_si128,       __m128i,    __m128i)
 DEFINE_TEST_OP_RAI (_mm_aeskeygenassist_si128, __m128i,    __m128i,    0xFF)
 
 DEFINE_TEST_OP_RABI(_mm_clmulepi64_si128,   __m128i,    __m128i,    __m128i,    0x00)
+DEFINE_TEST_OP_RABI(_mm_clmulepi64_si128,   __m128i,    __m128i,    __m128i,    0x01)
+DEFINE_TEST_OP_RABI(_mm_clmulepi64_si128,   __m128i,    __m128i,    __m128i,    0x10)
 DEFINE_TEST_OP_RABI(_mm_clmulepi64_si128,   __m128i,    __m128i,    __m128i,    0x11)
 
 #if defined(__AVX2__) || (defined(USE_SOFT_INTRINSICS) && (USE_SOFT_INTRINSICS >= 2))
@@ -902,6 +904,8 @@ DEFINE_TEST_OP_RAB (_mm256_aesenc_epi128,    __m256i,    __m256i,    __m256i)
 DEFINE_TEST_OP_RAB (_mm256_aesenclast_epi128,__m256i,    __m256i,    __m256i)
 
 DEFINE_TEST_OP_RABI(_mm256_clmulepi64_epi128,__m256i,    __m256i,    __m256i,   0x00)
+DEFINE_TEST_OP_RABI(_mm256_clmulepi64_epi128,__m256i,    __m256i,    __m256i,   0x01)
+DEFINE_TEST_OP_RABI(_mm256_clmulepi64_epi128,__m256i,    __m256i,    __m256i,   0x10)
 DEFINE_TEST_OP_RABI(_mm256_clmulepi64_epi128,__m256i,    __m256i,    __m256i,   0x11)
 
 #endif // AVX2 VAES tests
