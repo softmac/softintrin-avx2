@@ -1223,6 +1223,116 @@ DEFINE_N128_OP_N128_N128(__m128,  div_ss,       neon_fdivq32,   __m128,  a, __m1
 DEFINE_N128_OP_N128_N128(__m128d, hadd_pd,      vpaddq_f64,     __m128d, a, __m128d, b, 0);
 DEFINE_N128_OP_N128_N128(__m128,  hadd_ps,      vpaddq_f32,     __m128,  a, __m128,  b, 0);
 
+// ADDSUBPD ADDSUBPS
+
+#undef _mm_addsub_pd
+#undef _mm_addsub_ps
+
+__forceinline
+__n128 _nn_addsub_pd(__n128 a, const __n128 b)
+{
+    static const __declspec(align(16)) uint64_t AddLaneMask[2] = { 0, ~0ull };
+    const uint64x2_t Mask = vld1q_u64(AddLaneMask);
+
+    return vbslq_f64(Mask, vaddq_f64(a, b), vsubq_f64(a, b));
+}
+
+__forceinline
+__m128d _mm_addsub_pd(__m128d a, __m128d b)
+{
+    return _nn128_castn128_pd(_nn_addsub_pd(_nn128_castpd_n128(a), _nn128_castpd_n128(b)));
+}
+
+__forceinline
+__n128 _nn_addsub_ps(__n128 a, const __n128 b)
+{
+    static const __declspec(align(16)) uint32_t AddLaneMask[4] = { 0, ~0u, 0, ~0u };
+    const uint32x4_t Mask = vld1q_u32(AddLaneMask);
+
+    return vbslq_f32(Mask, vaddq_f32(a, b), vsubq_f32(a, b));
+}
+
+__forceinline
+__m128 _mm_addsub_ps(__m128 a, __m128 b)
+{
+    return _nn128_castn128_ps(_nn_addsub_ps(_nn128_castps_n128(a), _nn128_castps_n128(b)));
+}
+
+// HSUBPD HSUBPS
+
+#undef _mm_hsub_pd
+#undef _mm_hsub_ps
+
+__forceinline
+__n128 _nn_hsub_pd(__n128 a, const __n128 b)
+{
+    return vsubq_f64(vuzp1q_f64(a, b), vuzp2q_f64(a, b));
+}
+
+__forceinline
+__m128d _mm_hsub_pd(__m128d a, __m128d b)
+{
+    return _nn128_castn128_pd(_nn_hsub_pd(_nn128_castpd_n128(a), _nn128_castpd_n128(b)));
+}
+
+__forceinline
+__n128 _nn_hsub_ps(__n128 a, const __n128 b)
+{
+    return vsubq_f32(vuzp1q_f32(a, b), vuzp2q_f32(a, b));
+}
+
+__forceinline
+__m128 _mm_hsub_ps(__m128 a, __m128 b)
+{
+    return _nn128_castn128_ps(_nn_hsub_ps(_nn128_castps_n128(a), _nn128_castps_n128(b)));
+}
+
+// DPPD DPPS
+
+#undef _mm_dp_pd
+#undef _mm_dp_ps
+
+__forceinline
+__n128 _nn_dp_pd(__n128 a, const __n128 b, const int imm8)
+{
+    static const __declspec(align(16)) uint64_t SourceLaneBits[2] = { 0x10, 0x20 };
+    static const __declspec(align(16)) uint64_t ResultLaneBits[2] = { 0x01, 0x02 };
+    const uint64x2_t Control = vdupq_n_u64((uint64_t)imm8);
+    const uint64x2_t SourceMask = vtstq_u64(Control, vld1q_u64(SourceLaneBits));
+    const uint64x2_t ResultMask = vtstq_u64(Control, vld1q_u64(ResultLaneBits));
+    const float64x2_t Products = vreinterpretq_f64_u64(vandq_u64(vreinterpretq_u64_f64(vmulq_f64(a, b)), SourceMask));
+    const float64x2_t Sum = vpaddq_f64(Products, Products);
+
+    return vreinterpretq_f64_u64(vandq_u64(vreinterpretq_u64_f64(Sum), ResultMask));
+}
+
+__forceinline
+__m128d _mm_dp_pd(__m128d a, __m128d b, const int imm8)
+{
+    return _nn128_castn128_pd(_nn_dp_pd(_nn128_castpd_n128(a), _nn128_castpd_n128(b), imm8));
+}
+
+__forceinline
+__n128 _nn_dp_ps(__n128 a, const __n128 b, const int imm8)
+{
+    static const __declspec(align(16)) uint32_t SourceLaneBits[4] = { 0x10, 0x20, 0x40, 0x80 };
+    static const __declspec(align(16)) uint32_t ResultLaneBits[4] = { 0x01, 0x02, 0x04, 0x08 };
+    const uint32x4_t Control = vdupq_n_u32((uint32_t)imm8);
+    const uint32x4_t SourceMask = vtstq_u32(Control, vld1q_u32(SourceLaneBits));
+    const uint32x4_t ResultMask = vtstq_u32(Control, vld1q_u32(ResultLaneBits));
+    const float32x4_t Products = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vmulq_f32(a, b)), SourceMask));
+    const float32x4_t PairSums = vpaddq_f32(Products, Products);
+    const float32x4_t Sum = vpaddq_f32(PairSums, PairSums);
+
+    return vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(Sum), ResultMask));
+}
+
+__forceinline
+__m128 _mm_dp_ps(__m128 a, __m128 b, const int imm8)
+{
+    return _nn128_castn128_ps(_nn_dp_ps(_nn128_castps_n128(a), _nn128_castps_n128(b), imm8));
+}
+
 // SQRTPD SQRTSD
 // SQRTPS SQRTSS
 
@@ -1742,6 +1852,35 @@ __m128i _mm_shuffle_epi32(__m128i a, const int imm8)
     return T;
 }
 
+// SHUFPD
+
+#undef _mm_shuffle_pd
+
+__forceinline
+__n128 _nn128_shuffle_pd(__n128 a, const __n128 b, const int imm8)
+{
+    switch (imm8 & 0x03)
+    {
+        case 0:
+            return vzip1q_f64(a, b);
+
+        case 1:
+            return vextq_f64(a, b, 1);
+
+        case 2:
+            return vsetq_lane_f64(vgetq_lane_f64(b, 1), a, 1);
+
+        default:
+            return vzip2q_f64(a, b);
+    }
+}
+
+__forceinline
+__m128d _mm_shuffle_pd(__m128d a, __m128d b, const int imm8)
+{
+    return _nn128_castn128_pd(_nn128_shuffle_pd(_nn128_castpd_n128(a), _nn128_castpd_n128(b), imm8));
+}
+
 // SHUFPS
 
 #undef _mm_shuffle_ps
@@ -1749,32 +1888,24 @@ __m128i _mm_shuffle_epi32(__m128i a, const int imm8)
 __forceinline
 __n128 _nn128_shuffle_ps(__n128 a, const __n128 b, const unsigned int imm8)
 {
-    __n128 T;
+    uint32x4_t Indices = vdupq_n_u32(0);
+    uint8x16x2_t Table;
 
-    T.n128_f32[0] = a.n128_f32[(imm8 >> 0) & 0x03];
-    T.n128_f32[1] = a.n128_f32[(imm8 >> 2) & 0x03];
-    T.n128_f32[2] = b.n128_f32[(imm8 >> 4) & 0x03];
-    T.n128_f32[3] = b.n128_f32[(imm8 >> 6) & 0x03];
+    Indices = vsetq_lane_u32(0x03020100u + (((imm8 >> 0) & 0x03) * 0x04040404u), Indices, 0);
+    Indices = vsetq_lane_u32(0x03020100u + (((imm8 >> 2) & 0x03) * 0x04040404u), Indices, 1);
+    Indices = vsetq_lane_u32(0x13121110u + (((imm8 >> 4) & 0x03) * 0x04040404u), Indices, 2);
+    Indices = vsetq_lane_u32(0x13121110u + (((imm8 >> 6) & 0x03) * 0x04040404u), Indices, 3);
 
-    return T;
+    Table.val[0] = vreinterpretq_u8_f32(a);
+    Table.val[1] = vreinterpretq_u8_f32(b);
+
+    return vreinterpretq_f32_u8(vqtbl2q_u8(Table, vreinterpretq_u8_u32(Indices)));
 }
 
 __forceinline
 __m128 _mm_shuffle_ps(__m128 a, __m128 b, const unsigned int imm8)
 {
-//  the NEON path is slower due to memory spill for the casts :-(
-//  return _nn128_castn128_ps( _nn128_shuffle_ps(_nn128_castps_n128(a), _nn128_castps_n128(b), imm8) );
-
-    __m128 T;
-
-    // all other cases slow shuffle
-
-    T.m128_f32[0] = a.m128_f32[(imm8 >> 0) & 0x03];
-    T.m128_f32[1] = a.m128_f32[(imm8 >> 2) & 0x03];
-    T.m128_f32[2] = b.m128_f32[(imm8 >> 4) & 0x03];
-    T.m128_f32[3] = b.m128_f32[(imm8 >> 6) & 0x03];
-
-    return T;
+    return _nn128_castn128_ps(_nn128_shuffle_ps(_nn128_castps_n128(a), _nn128_castps_n128(b), imm8));
 }
 
 // CMPPS
@@ -1850,6 +1981,59 @@ __m128 _mm_cmp_ps(__m128 a, __m128 b, const int imm8)
 
     return T;
 }
+
+// BLENDPD BLENDPS
+
+#undef _mm_blend_pd
+#undef _mm_blend_ps
+
+__forceinline
+__n128 sw_blend_pd(__n128 a, const __n128 b, const int imm8)
+{
+    switch (imm8 & 0x03)
+    {
+        case 0:
+            return a;
+
+        case 1:
+            return vsetq_lane_f64(vgetq_lane_f64(b, 0), a, 0);
+
+        case 2:
+            return vsetq_lane_f64(vgetq_lane_f64(b, 1), a, 1);
+
+        default:
+            return b;
+    }
+}
+
+DEFINE_N128_OP_N128_N128_IMM8(__m128d, blend_pd, sw_blend_pd, __m128d, a, __m128d, b, 0)
+
+__forceinline
+__n128 sw_blend_ps(__n128 a, const __n128 b, const int imm8)
+{
+    switch (imm8 & 0x0F)
+    {
+        case 0x00:
+            return a;
+
+        case 0x03:
+            return vsetq_lane_u64(vgetq_lane_u64(a, 1), b, 1);
+
+        case 0x0C:
+            return vsetq_lane_u64(vgetq_lane_u64(b, 1), a, 1);
+
+        case 0x0F:
+            return b;
+    }
+
+    static const __declspec(align(16)) uint32_t LaneBitValues[4] = { 1, 2, 4, 8 };
+    const uint32x4_t LaneBits = vld1q_u32(LaneBitValues);
+    const uint32x4_t LaneMask = vtstq_u32(vdupq_n_u32((uint32_t)imm8), LaneBits);
+
+    return vbslq_f32(LaneMask, b, a);
+}
+
+DEFINE_N128_OP_N128_N128_IMM8(__m128, blend_ps, sw_blend_ps, __m128, a, __m128, b, 0)
 
 // PBLENDW
 
@@ -2756,6 +2940,162 @@ __m256 _mm256_movehdup_ps(__m256 a)
 }
 
 // VCVT variants
+
+// CVTPS2DQ CVTTPS2DQ
+// CVTPD2DQ CVTTPD2DQ
+
+#undef _mm_cvtps_epi32
+#undef _mm_cvttps_epi32
+#undef _mm_cvtpd_epi32
+#undef _mm_cvttpd_epi32
+
+__forceinline
+__n128 _nn_fix_cvtps_epi32(__n128 a, int32x4_t Converted)
+{
+    const float32x4_t PositiveLimit = vdupq_n_f32(2147483648.0f);
+    const uint32x4_t PositiveOverflow = vcgeq_f32(a, PositiveLimit);
+    const uint32x4_t IsOrdered = vceqq_f32(a, a);
+    const uint32x4_t IsInvalid = vorrq_u32(PositiveOverflow, vmvnq_u32(IsOrdered));
+    const int32x4_t Indefinite = vdupq_n_s32((int)0x80000000u);
+
+    return vbslq_s32(IsInvalid, Indefinite, Converted);
+}
+
+__forceinline
+__m128i _mm_cvtps_epi32(__m128 a)
+{
+    const __n128 Input = _nn128_castps_n128(a);
+    return _nn128_castn128_si128(_nn_fix_cvtps_epi32(Input, vcvtnq_s32_f32(Input)));
+}
+
+__forceinline
+__m128i _mm_cvttps_epi32(__m128 a)
+{
+    const __n128 Input = _nn128_castps_n128(a);
+    return _nn128_castn128_si128(_nn_fix_cvtps_epi32(Input, vcvtq_s32_f32(Input)));
+}
+
+// CVTSS2SI CVTTSS2SI
+
+#undef _mm_cvt_ss2si
+#undef _mm_cvtt_ss2si
+
+__forceinline
+int _mm_cvt_ss2si(__m128 a)
+{
+    const __n128 Input = _nn128_castps_n128(a);
+    const int32x4_t Converted = _nn_fix_cvtps_epi32(Input, vcvtnq_s32_f32(Input));
+
+    return vgetq_lane_s32(Converted, 0);
+}
+
+__forceinline
+int _mm_cvtt_ss2si(__m128 a)
+{
+    const __n128 Input = _nn128_castps_n128(a);
+    const int32x4_t Converted = _nn_fix_cvtps_epi32(Input, vcvtq_s32_f32(Input));
+
+    return vgetq_lane_s32(Converted, 0);
+}
+
+// CVTSI2SS CVTSI2SD
+
+#undef _mm_cvt_si2ss
+#undef _mm_cvtsi32_sd
+#undef _mm_cvtsi64_sd
+#undef _mm_cvtsi64x_sd
+
+__forceinline
+__m128 _mm_cvt_si2ss(__m128 a, int b)
+{
+    const __n128 Input = _nn128_castps_n128(a);
+    return _nn128_castn128_ps(vsetq_lane_f32((float)b, Input, 0));
+}
+
+__forceinline
+__m128d _mm_cvtsi32_sd(__m128d a, int b)
+{
+    const __n128 Input = _nn128_castpd_n128(a);
+    return _nn128_castn128_pd(vsetq_lane_f64((double)b, Input, 0));
+}
+
+__forceinline
+__m128d _mm_cvtsi64_sd(__m128d a, __int64 b)
+{
+    const __n128 Input = _nn128_castpd_n128(a);
+    return _nn128_castn128_pd(vsetq_lane_f64((double)b, Input, 0));
+}
+
+__forceinline
+__m128d _mm_cvtsi64x_sd(__m128d a, __int64 b)
+{
+    return _mm_cvtsi64_sd(a, b);
+}
+
+// CVTDQ2PD
+
+#undef _mm_cvtepi32_pd
+
+__forceinline
+__m128d _mm_cvtepi32_pd(__m128i a)
+{
+    const int32x4_t Input = _nn128_castsi128_n128(a);
+    const int64x2_t Widened = vmovl_s32(vget_low_s32(Input));
+
+    return _nn128_castn128_pd(vcvtq_f64_s64(Widened));
+}
+
+__forceinline
+__n128 _nn_fix_cvtpd_epi32(__n128 a, int64x2_t Converted64)
+{
+    const int64x2_t Maximum = vdupq_n_s64(2147483647ll);
+    const int64x2_t Minimum = vdupq_n_s64(-2147483647ll - 1);
+    const uint64x2_t PositiveOverflow = vcgtq_s64(Converted64, Maximum);
+    const uint64x2_t NegativeOverflow = vcltq_s64(Converted64, Minimum);
+    const uint64x2_t IsOrdered = vceqq_f64(a, a);
+    const uint64x2_t IsUnordered = vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(IsOrdered)));
+    const uint64x2_t IsInvalid64 = vorrq_u64(vorrq_u64(PositiveOverflow, NegativeOverflow), IsUnordered);
+    const uint32x2_t IsInvalid = vmovn_u64(IsInvalid64);
+    const int32x2_t Indefinite = vdup_n_s32((int)0x80000000u);
+    const int32x2_t Result = vbsl_s32(IsInvalid, Indefinite, vmovn_s64(Converted64));
+
+    return vcombine_s32(Result, vdup_n_s32(0));
+}
+
+__forceinline
+__m128i _mm_cvtpd_epi32(__m128d a)
+{
+    const __n128 Input = _nn128_castpd_n128(a);
+    return _nn128_castn128_si128(_nn_fix_cvtpd_epi32(Input, vcvtnq_s64_f64(Input)));
+}
+
+__forceinline
+__m128i _mm_cvttpd_epi32(__m128d a)
+{
+    const __n128 Input = _nn128_castpd_n128(a);
+    return _nn128_castn128_si128(_nn_fix_cvtpd_epi32(Input, vcvtq_s64_f64(Input)));
+}
+
+// CVTPD2PS CVTPS2PD
+
+#undef _mm_cvtpd_ps
+#undef _mm_cvtps_pd
+
+__forceinline
+__m128 _mm_cvtpd_ps(__m128d a)
+{
+    const float32x2_t Converted = vcvt_f32_f64(_nn128_castpd_n128(a));
+    const __n128 Result = vcombine_f32(Converted, vdup_n_f32(0.0f));
+
+    return _nn128_castn128_ps(Result);
+}
+
+__forceinline
+__m128d _mm_cvtps_pd(__m128 a)
+{
+    const __n128 Input = _nn128_castps_n128(a);
+    return _nn128_castn128_pd(vcvt_f64_f32(vget_low_f32(Input)));
+}
 
 // CVTDQ2PS
 
