@@ -643,7 +643,11 @@ DEFINE_N128_OP_N128_N128(__m128i, sub_epi64,    neon_subq64,    __m128i, a, __m1
 __forceinline
 __n128 sw_madd_epi16(__n128 a, const __n128 b)
 {
-    __n128 T;
+    const int32x4_t ProductLow = vmull_s16(vget_low_s16(a), vget_low_s16(b));
+    const int32x4_t ProductHigh = vmull_high_s16(a, b);
+    __n128 T = vpaddq_s32(ProductLow, ProductHigh);
+
+#if 0
 
     // slower reference alternative
 
@@ -656,13 +660,26 @@ __n128 sw_madd_epi16(__n128 a, const __n128 b)
     T.n128_i32[3] = ((__int32)a.n128_i16[6] * (__int32)b.n128_i16[6]) +
                     ((__int32)a.n128_i16[7] * (__int32)b.n128_i16[7]);
 
+#endif
+
     return T;
 }
 
 __forceinline
 __n128 sw_maddubs_epi16(__n128 a, const __n128 b)
 {
-    __n128 T;
+    const int16x8_t AProductLow = vreinterpretq_s16_u16(vmovl_u8(vget_low_u8(a)));
+    const int16x8_t AProductHigh = vreinterpretq_s16_u16(vmovl_high_u8(a));
+    const int16x8_t BProductLow = vmovl_s8(vget_low_s8(b));
+    const int16x8_t BProductHigh = vmovl_high_s8(b);
+
+    const int16x8_t ProductLow = vmulq_s16(AProductLow, BProductLow);
+    const int16x8_t ProductHigh = vmulq_s16(AProductHigh, BProductHigh);
+    const int16x8_t ProductEven = vuzp1q_s16(ProductLow, ProductHigh);
+    const int16x8_t ProductOdd = vuzp2q_s16(ProductLow, ProductHigh);
+    __n128 T = vqaddq_s16(ProductEven, ProductOdd);
+
+#if 0
 
     // slower reference alternative
     // A lanes are zero-extended
@@ -684,6 +701,8 @@ __n128 sw_maddubs_epi16(__n128 a, const __n128 b)
                                  ((__int32)a.n128_u8[13] * (__int32)b.n128_i8[13]));
     T.n128_i16[7] = _SaturateI16(((__int32)a.n128_u8[14] * (__int32)b.n128_i8[14]) +
                                  ((__int32)a.n128_u8[15] * (__int32)b.n128_i8[15]));
+
+#endif
 
     return T;
 }
@@ -1641,6 +1660,21 @@ DEFINE_N128_OP_N128_N128(__m128i, srav_epi32,   sw_srav_epi32,  __m128i, a, __m1
 DEFINE_N128_OP_N128_N128(__m128i, srlv_epi32,   sw_srlv_epi32,  __m128i, a, __m128i, b, 0)
 DEFINE_N128_OP_N128_N128(__m128i, srlv_epi64,   sw_srlv_epi64,  __m128i, a, __m128i, b, 0)
 
+// PSHUFB
+
+#undef _mm_shuffle_epi8
+
+__forceinline
+__n128 sw_shuffle_epi8(__n128 a, const __n128 b)
+{
+    const uint8x16_t IndexMask = vdupq_n_u8(0x8F);
+    const uint8x16_t Index = vandq_u8(b, IndexMask);
+
+    return vqtbl1q_u8(a, Index);
+}
+
+DEFINE_N128_OP_N128_N128(__m128i, shuffle_epi8, sw_shuffle_epi8, __m128i, a, __m128i, b, 0)
+
 // PSHUFD
 
 #undef _mm_shuffle_epi32
@@ -1783,6 +1817,22 @@ __m128 _mm_cmp_ps(__m128 a, __m128 b, const int imm8)
     return T;
 }
 
+// PBLENDW
+
+#undef _mm_blend_epi16
+
+__forceinline
+__n128 sw_blend_epi16(__n128 a, const __n128 b, const int imm8)
+{
+    static const __declspec(align(16)) uint16_t LaneBitValues[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
+    const uint16x8_t LaneBits = vld1q_u16(LaneBitValues);
+    const uint16x8_t LaneMask = vtstq_u16(vdupq_n_u16((uint16_t)imm8), LaneBits);
+
+    return vbslq_u16(LaneMask, b, a);
+}
+
+DEFINE_N128_OP_N128_N128_IMM8(__m128i, blend_epi16, sw_blend_epi16, __m128i, a, __m128i, b, 0)
+
 // PBLENDVB
 
 #undef _mm_blendv_epi8
@@ -1829,10 +1879,28 @@ DEFINE_N128_OP_N128_N128_N128(__m128,  blendv_ps,    sw_blendv_ps,   __m128,  a,
 __forceinline
 int _mm_movemask_epi8(const __m128i a)
 {
-    int mask = 0;
+    static const __declspec(align(16)) uint8_t BitWeightValues[16] = {
+        1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128
+    };
+    const uint8x16_t BitWeights = vld1q_u8(BitWeightValues);
+    const __n128 Input = _nn128_castsi128_n128(a);
+    const int8x16_t SignBits = vshrq_n_s8(Input, 7);
+    const uint8x16_t WeightedBits = vandq_u8(vreinterpretq_u8_s8(SignBits), BitWeights);
+    const uint16x8_t PairSums = vpaddlq_u8(WeightedBits);
+    const uint32x4_t QuadSums = vpaddlq_u16(PairSums);
+    const uint64x2_t OctetSums = vpaddlq_u32(QuadSums);
+    int mask = (int)(vgetq_lane_u64(OctetSums, 0) | (vgetq_lane_u64(OctetSums, 1) << 8));
+
+#if 0
+
+    // slower reference alternative
+
+    mask = 0;
 
     for (unsigned i = 0; i < 16; i++)
         mask |= (a.m128i_u8[i] >> 7) << i;
+
+#endif
 
     return mask;
 }
@@ -2543,6 +2611,12 @@ __m256 _mm256_movehdup_ps(__m256 a)
 }
 
 // VCVT variants
+
+// CVTDQ2PS
+
+#undef _mm_cvtepi32_ps
+
+DEFINE_N128_OP_N128(__m128, cvtepi32_ps, vcvtq_f32_s32, __m128i, a, 0)
 
 // VCVTDQ2PD
 
